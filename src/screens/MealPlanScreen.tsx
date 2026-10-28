@@ -3,7 +3,7 @@ import {
   ActivityIndicator, Alert, FlatList, Modal, ScrollView,
   StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { useMealPlan } from '../hooks/useMealPlan';
@@ -59,6 +59,19 @@ export default function MealPlanScreen() {
   const today = new Date();
   const weekStart = addDays(mondayOfWeek(today), weekOffset * 7);
   const { entries, loading, error, refresh, addEntry, removeEntry } = useMealPlan(weekStart);
+
+  // A recipe opened from here can be edited or deleted before Back returns to
+  // this screen, so re-fetch quietly on regaining focus. The first focus is
+  // skipped (the hook already fetches on mount) and `refresh` is read through a
+  // ref so a week change, which gives `refresh` a new identity, doesn't fire
+  // an extra fetch from this effect.
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
+  const hasFocusedOnce = useRef(false);
+  useFocusEffect(useCallback(() => {
+    if (!hasFocusedOnce.current) { hasFocusedOnce.current = true; return; }
+    refreshRef.current({ silent: true });
+  }, []));
 
   const selectedDate = isoDate(addDays(weekStart, selectedDay));
   const dayEntries = entries.filter(e => e.date === selectedDate);
@@ -209,7 +222,7 @@ export default function MealPlanScreen() {
       ) : error ? (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={refresh}><Text style={styles.retryText}>{t('common.retry')}</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => refresh()}><Text style={styles.retryText}>{t('common.retry')}</Text></TouchableOpacity>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.planList}>

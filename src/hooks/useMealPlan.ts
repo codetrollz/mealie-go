@@ -20,8 +20,10 @@ export function useMealPlan(weekDate: Date) {
 
   const { start, end } = weekBounds(weekDate);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
+  // `silent` re-fetches without swapping the list for a spinner, for refreshing
+  // when the screen regains focus.
+  const refresh = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) setLoading(true);
     setError(null);
     try {
       const data = await api.getMealPlans(start, end);
