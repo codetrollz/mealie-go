@@ -3,12 +3,13 @@ import {
   ActivityIndicator, Alert, FlatList, Modal, ScrollView,
   StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { useMealPlan } from '../hooks/useMealPlan';
 import { api } from '../lib/mealieApi';
 import { navigateToGuide } from '../navigation/navigateToGuide';
-import type { MainTabParams } from '../navigation/RootNavigator';
+import type { MealPlanStackParams } from '../navigation/RootNavigator';
 import EmptyState from '../components/EmptyState';
 import { colors, radius, spacing, typography } from '../theme';
 import type { MealPlanEntry, MealPlanEntryType, RecipeSummary } from '../types';
@@ -42,7 +43,7 @@ type AddMode = 'recipe' | 'note';
 
 export default function MealPlanScreen() {
   const { t, i18n } = useTranslation();
-  const navigation = useNavigation<NavigationProp<MainTabParams>>();
+  const navigation = useNavigation<NativeStackNavigationProp<MealPlanStackParams>>();
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDay, setSelectedDay] = useState(0);
 
@@ -103,10 +104,7 @@ export default function MealPlanScreen() {
   };
 
   const openRecipe = (recipe: RecipeSummary) => {
-    navigation.navigate('Recipes', {
-      screen: 'RecipeDetail',
-      params: { slug: recipe.slug, name: recipe.name },
-    } as never);
+    navigation.navigate('RecipeDetail', { slug: recipe.slug, name: recipe.name });
   };
 
   const handleAddRecipe = async (recipe: RecipeSummary) => {
