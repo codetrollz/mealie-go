@@ -176,7 +176,7 @@ mounts straight into `MainTabs`.
 | Tab | Stack screens |
 |---|---|
 | Recipes 🍽️ | RecipesList → RecipeDetail, AddRecipe (modal), RecipeEdit |
-| Meal Plan 📅 | Single screen (no nested stack) |
+| Meal Plan 📅 | MealPlanHome → RecipeDetail, RecipeEdit |
 | Shopping 🛒 | ShoppingLists → ShoppingListDetail |
 | Cookbooks 📖 | CookbooksList → CookbookDetail |
 | Settings ⚙️ | Single screen |
