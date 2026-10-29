@@ -32,3 +32,11 @@ test('a weekday shows the meals dated that day, in the evening west of UTC', asy
   expect(await screen.findByText('Wednesday dinner')).toBeTruthy();
   expect(screen.queryByText('Tuesday dinner')).toBeNull();
 });
+
+test('opens on today, not on the first day of the week', async () => {
+  // Wednesday evening in New York; the plan has meals on Tuesday and Wednesday.
+  await renderScreen(<MealPlanScreen />);
+  await waitFor(() => expect(api.getMealPlans).toHaveBeenCalled());
+  expect(await screen.findByText('Wednesday dinner')).toBeTruthy();
+  expect(screen.queryByText('Tuesday dinner')).toBeNull();
+});
