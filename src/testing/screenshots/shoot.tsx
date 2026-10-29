@@ -6,7 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import i18n, { initI18n } from '../../i18n';
-import { ThemeProvider, ThemePreference } from '../../theme';
+import { ThemeProvider, ThemePreference, AccentKey } from '../../theme';
 
 // Mounts `ui` with react-native-web into jsdom, lets async data settle, and
 // writes the full HTML (including react-native-web's generated CSS) to
@@ -20,7 +20,7 @@ export async function shoot(name: string, ui: React.ReactElement, interact?: (ho
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   await act(async () => { root.render(
     <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 28, left: 0, right: 0, bottom: 16 } }}>
-      <ThemeProvider initialPreference={(process.env.SHOT_SCHEME as ThemePreference) ?? 'dark'}>
+      <ThemeProvider initialPreference={(process.env.SHOT_SCHEME as ThemePreference) || 'dark'} initialAccent={(process.env.SHOT_ACCENT as AccentKey) || 'orange'}>
         <NavigationContainer>{ui}</NavigationContainer>
       </ThemeProvider>
     </SafeAreaProvider>

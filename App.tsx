@@ -6,7 +6,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import { FavoritesProvider } from './src/context/FavoritesContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import { initI18n } from './src/i18n';
-import { ThemeProvider, ThemePreference, getSavedThemePreference, useTheme } from './src/theme';
+import { ThemeProvider, ThemePreference, AccentKey, getSavedThemePreference, getSavedAccent, useTheme } from './src/theme';
 
 // Status/navigation bar icons must contrast with the current theme: dark icons on light.
 function ThemedSystemBars() {
@@ -17,11 +17,12 @@ function ThemedSystemBars() {
 
 export default function App() {
   const [i18nReady, setI18nReady] = useState(false);
-  const [themePreference, setThemePreference] = useState<ThemePreference | null>(null);
+  const [savedTheme, setSavedTheme] = useState<{ preference: ThemePreference; accent: AccentKey } | null>(null);
 
   // Read before the first render so the app never flashes the wrong theme.
   useEffect(() => {
-    getSavedThemePreference().then(setThemePreference);
+    Promise.all([getSavedThemePreference(), getSavedAccent()])
+      .then(([preference, accent]) => setSavedTheme({ preference, accent }));
   }, []);
 
   // Resources are bundled JSON (no network dependency) and the only async
@@ -38,10 +39,10 @@ export default function App() {
       .catch(() => setI18nReady(true));
   }, []);
 
-  if (!i18nReady || themePreference === null) return null;
+  if (!i18nReady || savedTheme === null) return null;
 
   return (
-    <ThemeProvider initialPreference={themePreference}>
+    <ThemeProvider initialPreference={savedTheme.preference} initialAccent={savedTheme.accent}>
       <SafeAreaProvider>
         <AuthProvider>
           <FavoritesProvider>

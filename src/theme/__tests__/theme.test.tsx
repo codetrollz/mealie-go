@@ -6,7 +6,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as RN from 'react-native';
 import {
-  ACCENTS, buildColors, getSavedThemePreference, ThemeProvider, useTheme, type Colors, type Scheme,
+  ACCENTS, ACCENT_KEYS, buildColors, getSavedAccent, getSavedThemePreference, ThemeProvider, useTheme, type Colors, type Scheme,
 } from '..';
 
 function luminance(hex: string) {
@@ -19,8 +19,10 @@ function contrast(a: string, b: string) {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-describe.each<Scheme>(['dark', 'light'])('%s palette', scheme => {
-  const c = buildColors(scheme);
+const combos = (['dark', 'light'] as Scheme[]).flatMap(scheme => ACCENT_KEYS.map(accent => [scheme, accent] as const));
+
+describe.each(combos)('%s palette, %s accent', (scheme, accent) => {
+  const c = buildColors(scheme, accent);
   test('body text reads on every surface (4.5:1)', () => {
     for (const bg of [c.background, c.surface, c.surfaceElevated]) {
       expect(contrast(c.textPrimary, bg)).toBeGreaterThanOrEqual(4.5);
@@ -60,12 +62,15 @@ test('an accent changes only primary colours and the active tab', () => {
 });
 
 function Probe() {
-  const { scheme, preference, colors, setPreference } = useTheme();
+  const { scheme, preference, colors, setPreference, accent, setAccent } = useTheme();
   return (
     <>
       <Text testID="scheme">{scheme}</Text>
       <Text testID="pref">{preference}</Text>
       <Text testID="bg">{colors.background}</Text>
+      <Text testID="accent">{accent}</Text>
+      <Text testID="primary">{colors.primary}</Text>
+      <Text onPress={() => setAccent('blue')}>choose blue</Text>
       <Text onPress={() => setPreference('light')}>choose light</Text>
     </>
   );
@@ -99,6 +104,21 @@ describe('ThemeProvider', () => {
     await fireEvent.press(screen.getByText('choose light'));
     expect(screen.getByTestId('scheme').props.children).toBe('light');
     expect(await getSavedThemePreference()).toBe('light');
+  });
+
+  test('choosing an accent recolours live and is saved', async () => {
+    jest.spyOn(RN, 'useColorScheme').mockReturnValue('light');
+    await render(<ThemeProvider><Probe /></ThemeProvider>);
+    expect(screen.getByTestId('accent').props.children).toBe('orange');
+    await fireEvent.press(screen.getByText('choose blue'));
+    expect(screen.getByTestId('primary').props.children).toBe(ACCENTS.blue.light.primary);
+    expect(await getSavedAccent()).toBe('blue');
+  });
+
+  test('a missing or invalid saved accent means orange', async () => {
+    expect(await getSavedAccent()).toBe('orange');
+    await AsyncStorage.setItem('mealie_go.accent', 'chartreuse');
+    expect(await getSavedAccent()).toBe('orange');
   });
 
   test('a missing or invalid saved value means system', async () => {

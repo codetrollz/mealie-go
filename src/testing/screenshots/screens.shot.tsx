@@ -18,7 +18,9 @@ import { api } from '../../lib/mealieApi';
 const nav: any = { navigate: jest.fn(), goBack: jest.fn(), setOptions: jest.fn(), addListener: () => () => {}, replace: jest.fn(), popTo: jest.fn(), getParent: () => undefined };
 const route = (params: object, name = 'Screen'): any => ({ key: name, name, params });
 const SCHEME = process.env.SHOT_SCHEME ?? 'dark';
-const shot = (name: string, ui: React.ReactElement, interact?: (host: HTMLElement) => void | Promise<void>) => shoot(`${name}-${SCHEME}`, ui, interact);
+const ACCENT = process.env.SHOT_ACCENT;
+const shot = (name: string, ui: React.ReactElement, interact?: (host: HTMLElement) => void | Promise<void>) =>
+  shoot(`${name}-${SCHEME}${ACCENT ? `-${ACCENT}` : ''}`, ui, interact);
 
 beforeEach(() => {
   jest.useFakeTimers({ now: new Date('2026-10-29T16:00:00Z'), doNotFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'setImmediate', 'clearImmediate', 'nextTick', 'queueMicrotask'] });

@@ -9,7 +9,7 @@ import type { UnitSystemPreference } from '../lib/unitConversion';
 import { navigateToGuide } from '../navigation/navigateToGuide';
 import { SUPPORTED_LANGUAGES, setLanguage } from '../i18n';
 import type { LanguageCode } from '../i18n';
-import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
+import { ACCENTS, ACCENT_KEYS, radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { ThemePreference } from '../theme';
 
 const THEME_CHOICES: { value: ThemePreference; labelKey: string }[] = [
@@ -22,7 +22,7 @@ export default function SettingsScreen() {
   const styles = useStyles();
   const { t, i18n } = useTranslation();
   const { user, serverUrl, logout } = useAuth();
-  const { preference, setPreference } = useTheme();
+  const { preference, setPreference, accent, setAccent, scheme } = useTheme();
   const navigation = useNavigation();
   const [unitSystem, setUnitSystem] = useState<UnitSystemPreference>('original');
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
@@ -91,6 +91,29 @@ export default function SettingsScreen() {
                   </Text>
                 </TouchableOpacity>
               ))}
+            </View>
+          </View>
+          <View style={styles.accentRow}>
+            <Text style={styles.prefLabel}>{t('settings.accentColor')}</Text>
+            <View style={styles.swatches}>
+              {ACCENT_KEYS.map(key => {
+                const name = t(`settings.accent${key[0].toUpperCase()}${key.slice(1)}`);
+                const selected = accent === key;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    onPress={() => setAccent(key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={name}
+                    accessibilityState={{ selected }}
+                    style={[styles.swatchRing, selected && styles.swatchRingSelected]}
+                  >
+                    <View style={[styles.swatch, { backgroundColor: ACCENTS[key][scheme].primary }]}>
+                      {selected ? <Text style={styles.swatchCheck}>✓</Text> : null}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
           <View style={styles.prefRow}>
@@ -204,6 +227,15 @@ const useStyles = makeStyles((colors) => StyleSheet.create({
     paddingVertical: spacing.sm + 2,
   },
   prefLabel: { fontSize: typography.size.md, color: colors.textSecondary },
+  accentRow: { paddingVertical: spacing.sm + 2, gap: spacing.sm },
+  swatches: { flexDirection: 'row', justifyContent: 'space-between' },
+  swatchRing: {
+    width: 38, height: 38, borderRadius: radius.full, borderWidth: 2, borderColor: 'transparent',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  swatchRingSelected: { borderColor: colors.textPrimary },
+  swatch: { width: 28, height: 28, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
+  swatchCheck: { color: colors.textInverse, fontSize: typography.size.sm, fontWeight: typography.weight.bold },
   segmented: {
     flexDirection: 'row', backgroundColor: colors.surfaceElevated,
     borderRadius: radius.md, padding: 3, borderWidth: 1, borderColor: colors.border,
