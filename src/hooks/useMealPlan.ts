@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/mealieApi';
 import type { MealPlanEntry, CreateMealPlanEntry } from '../types';
 
@@ -20,18 +20,30 @@ export function useMealPlan(weekDate: Date) {
 
   const { start, end } = weekBounds(weekDate);
 
-  // `silent` re-fetches without swapping the list for a spinner, for refreshing
-  // when the screen regains focus.
+  // Only the newest request may write state, so a slow response for a previous
+  // week (or an earlier focus refresh) can't overwrite the week now on screen
+  // or end its spinner early.
+  const latestRequest = useRef(0);
+
+  // `silent` re-fetches without the spinner and keeps the current list if the
+  // request fails, for refreshing when the screen regains focus.
   const refresh = useCallback(async (options?: { silent?: boolean }) => {
-    if (!options?.silent) setLoading(true);
-    setError(null);
+    const silent = options?.silent ?? false;
+    const requestId = ++latestRequest.current;
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const data = await api.getMealPlans(start, end);
+      if (requestId !== latestRequest.current) return;
       setEntries(data.items);
+      setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load meal plan');
+      if (requestId !== latestRequest.current) return;
+      if (!silent) setError(e instanceof Error ? e.message : 'Failed to load meal plan');
     } finally {
-      setLoading(false);
+      if (requestId === latestRequest.current) setLoading(false);
     }
   }, [start, end]);
 
