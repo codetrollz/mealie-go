@@ -44,7 +44,8 @@ export default function MealPlanScreen() {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<MealPlanStackParams>>();
   const [weekOffset, setWeekOffset] = useState(0);
-  const [selectedDay, setSelectedDay] = useState(0);
+  // Start on today (Monday-based index) rather than the first day of the week.
+  const [selectedDay, setSelectedDay] = useState(() => (new Date().getDay() + 6) % 7);
 
   const dayLabels = t('mealPlan.days', { returnObjects: true }) as string[];
   const mealTypeLabels = useMemo(
