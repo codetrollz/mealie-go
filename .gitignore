@@ -21,3 +21,6 @@ ios/
 # Not app source — lives in the private mealie-go-private repo instead
 /store/
 /website/
+
+# Screenshot / verification output (npm run shots)
+verify-evidence/
