@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useShoppingLists } from '../hooks/useShoppingLists';
 import { navigateToGuide } from '../navigation/navigateToGuide';
 import EmptyState from '../components/EmptyState';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { ShoppingStackParams } from '../navigation/RootNavigator';
 
 type Props = {
@@ -17,6 +17,8 @@ type Props = {
 };
 
 export default function ShoppingListsScreen({ navigation }: Props) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { lists, loading, error, refresh, createList, deleteList } = useShoppingLists();
   const [showCreate, setShowCreate] = useState(false);
@@ -132,7 +134,7 @@ export default function ShoppingListsScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingTop: 56 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -187,4 +189,4 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.6 },
   modalConfirmText: { color: colors.textInverse, fontSize: typography.size.md, fontWeight: typography.weight.semibold },
-});
+}));

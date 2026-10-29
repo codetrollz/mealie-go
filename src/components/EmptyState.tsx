@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography, makeStyles } from '../theme';
 
 interface Props {
   icon?: string;
@@ -9,6 +9,7 @@ interface Props {
 }
 
 export default function EmptyState({ icon = '🍽️', title, subtitle }: Props) {
+  const styles = useStyles();
   return (
     <View style={styles.container}>
       <Text style={styles.icon}>{icon}</Text>
@@ -18,7 +19,7 @@ export default function EmptyState({ icon = '🍽️', title, subtitle }: Props)
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
@@ -42,4 +43,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: typography.size.md * 1.5,
   },
-});
+}));

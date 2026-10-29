@@ -11,7 +11,7 @@ import { useRecipeMedia } from '../hooks/useRecipeMedia';
 import IngredientParseReviewModal, { formatIngredientPreview } from '../components/IngredientParseReviewModal';
 import { api, recipeAssetUrl, recipeImageSource } from '../lib/mealieApi';
 import { formatTimeText } from '../lib/timeEstimate';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { Recipe, RecipeIngredient, RecipeTag, RecipeCategory } from '../types';
 import type { RecipesStackParams } from '../navigation/RootNavigator';
 
@@ -39,10 +39,12 @@ function uid() {
 }
 
 function SectionLabel({ title }: { title: string }) {
+  const sectionStyles = useSectionStyles();
   return <Text style={sectionStyles.label}>{title}</Text>;
 }
 
 function AddBtn({ label, onPress }: { label: string; onPress: () => void }) {
+  const sectionStyles = useSectionStyles();
   return (
     <TouchableOpacity style={sectionStyles.addBtn} onPress={onPress}>
       <Text style={sectionStyles.addBtnText}>+ {label}</Text>
@@ -51,6 +53,10 @@ function AddBtn({ label, onPress }: { label: string; onPress: () => void }) {
 }
 
 export default function RecipeEditScreen({ navigation, route }: Props) {
+  const sectionStyles = useSectionStyles();
+  const photoStyles = usePhotoStyles();
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { slug } = route.params;
   const { serverUrl, token } = useAuth();
@@ -578,7 +584,7 @@ export default function RecipeEditScreen({ navigation, route }: Props) {
   );
 }
 
-const sectionStyles = StyleSheet.create({
+const useSectionStyles = makeStyles((colors) => StyleSheet.create({
   label: {
     fontSize: typography.size.xs,
     fontWeight: typography.weight.semibold,
@@ -607,9 +613,9 @@ const sectionStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-});
+}));
 
-const photoStyles = StyleSheet.create({
+const usePhotoStyles = makeStyles((colors) => StyleSheet.create({
   container: {
     width: '100%',
     height: 180,
@@ -645,9 +651,9 @@ const photoStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -883,4 +889,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: spacing.md,
   },
-});
+}));

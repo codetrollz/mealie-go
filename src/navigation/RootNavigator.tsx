@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { DefaultTheme, DarkTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { getHasSeenWelcome } from '../lib/onboarding';
-import { colors } from '../theme';
+import { makeStyles, useTheme } from '../theme';
 import type { GuideSection } from './navigateToGuide';
 
 import ConnectScreen from '../screens/auth/ConnectScreen';
@@ -138,6 +138,7 @@ function CookbooksNavigator() {
 }
 
 function MainTabs() {
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
@@ -197,6 +198,8 @@ function AuthedNavigator({ initialRouteName }: { initialRouteName: 'Welcome' | '
 }
 
 export default function RootNavigator() {
+  const styles = useStyles();
+  const { colors, scheme } = useTheme();
   const { user, loading, justSignedIn } = useAuth();
   const [hasSeenWelcome, setHasSeenWelcomeState] = useState<boolean | null>(null);
 
@@ -215,8 +218,16 @@ export default function RootNavigator() {
   // seen once, ever, on this device.
   const showWelcome = justSignedIn && !hasSeenWelcome;
 
+  // Screens draw their own backgrounds, but the navigator's own surfaces (card,
+  // transitions) must match the theme or they flash the library default.
+  const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  const navTheme = {
+    ...base,
+    colors: { ...base.colors, primary: colors.primary, background: colors.background, card: colors.surface, text: colors.textPrimary, border: colors.border },
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navTheme}>
       {user
         ? <AuthedNavigator initialRouteName={showWelcome ? 'Welcome' : 'MainTabs'} />
         : <AuthNavigator />
@@ -225,11 +236,11 @@ export default function RootNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   loading: {
     flex: 1,
     backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));

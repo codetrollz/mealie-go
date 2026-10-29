@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles } from '../theme';
 import { filterOptionName } from '../hooks/useRecipeFilterOptions';
 import type { FilterOptionSets } from '../hooks/useRecipeFilterOptions';
 import type { RecipeFilters } from '../hooks/useRecipes';
@@ -18,6 +18,7 @@ interface Props {
 }
 
 export default function ActiveFilterChips({ filters, options, onRemove }: Props) {
+  const styles = useStyles();
   const { t } = useTranslation();
   const count = filters.tags.length + filters.categories.length + filters.tools.length + filters.foods.length
     + (filters.maxPrepMinutes ? 1 : 0) + (filters.maxCookMinutes ? 1 : 0);
@@ -58,9 +59,9 @@ export default function ActiveFilterChips({ filters, options, onRemove }: Props)
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   bar: { marginBottom: spacing.xs },
   scroll: { paddingHorizontal: spacing.md, gap: spacing.sm },
   chip: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   chipText: { fontSize: typography.size.xs, color: colors.textInverse, fontWeight: typography.weight.medium },
-});
+}));

@@ -12,7 +12,7 @@ import { localIsoDate } from '../lib/localDate';
 import { navigateToGuide } from '../navigation/navigateToGuide';
 import type { MealPlanStackParams } from '../navigation/RootNavigator';
 import EmptyState from '../components/EmptyState';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { MealPlanEntry, MealPlanEntryType, RecipeSummary } from '../types';
 
 const MEAL_TYPES: MealPlanEntryType[] = ['breakfast', 'lunch', 'dinner', 'side'];
@@ -41,6 +41,9 @@ const isoDate = localIsoDate;
 type AddMode = 'recipe' | 'note';
 
 export default function MealPlanScreen() {
+  const styles = useStyles();
+  const addStyles = useAddStyles();
+  const { colors } = useTheme();
   const { t, i18n } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<MealPlanStackParams>>();
   const [weekOffset, setWeekOffset] = useState(0);
@@ -363,7 +366,7 @@ export default function MealPlanScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingTop: 56 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
   headerSide: { width: 28, alignItems: 'center' },
@@ -399,9 +402,9 @@ const styles = StyleSheet.create({
   removeText: { color: colors.textDisabled, fontSize: 16 },
   errorText: { color: colors.error, fontSize: typography.size.md },
   retryText: { color: colors.primary, fontSize: typography.size.md },
-});
+}));
 
-const addStyles = StyleSheet.create({
+const useAddStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingTop: spacing.xl, paddingBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
   cancel: { fontSize: typography.size.md, color: colors.textSecondary, width: 60 },
@@ -427,4 +430,4 @@ const addStyles = StyleSheet.create({
   noteInput: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.md, fontSize: typography.size.md, color: colors.textPrimary },
   addNoteBtn: { backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.md + 2, alignItems: 'center' },
   addNoteBtnText: { fontSize: typography.size.lg, fontWeight: typography.weight.semibold, color: colors.textInverse },
-});
+}));

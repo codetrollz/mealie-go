@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import { EMPTY_FILTERS } from '../hooks/useRecipes';
 import type { RecipeFilters } from '../hooks/useRecipes';
 import type { FilterOptionSets } from '../hooks/useRecipeFilterOptions';
@@ -24,6 +24,8 @@ interface Props {
 }
 
 export default function RecipeFilterModal({ visible, loading, options, filters, onApply, onClose }: Props) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState<RecipeFilters>(filters);
@@ -140,6 +142,7 @@ function TimeBucketSection({ label, selected, onSelect }: {
   selected?: number;
   onSelect: (value: number) => void;
 }) {
+  const styles = useStyles();
   return (
     <>
       <Text style={styles.sectionLabel}>{label}</Text>
@@ -176,6 +179,8 @@ function ChipSection({ label, options, selected, onToggle }: {
   selected: string[];
   onToggle: (value: string) => void;
 }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const searchable = options.length > CHIP_RENDER_CAP;
@@ -240,7 +245,7 @@ function ChipSection({ label, options, selected, onToggle }: {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -271,4 +276,4 @@ const styles = StyleSheet.create({
   emptyText: { color: colors.textDisabled, textAlign: 'center', fontSize: typography.size.md, marginTop: spacing.xl },
   applyBtn: { position: 'absolute', bottom: spacing.xl, left: spacing.md, right: spacing.md, backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.md + 2, alignItems: 'center' },
   applyBtnText: { fontSize: typography.size.lg, fontWeight: typography.weight.semibold, color: colors.textInverse },
-});
+}));

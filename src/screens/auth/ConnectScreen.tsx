@@ -12,9 +12,11 @@ import {
 } from '../../lib/mealieApi';
 import type { SavedAccount, ProxyHeader, AppInfo } from '../../lib/mealieApi';
 import OidcLoginModal from '../../components/OidcLoginModal';
-import { colors, radius, spacing, typography } from '../../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../../theme';
 
 export default function ConnectScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { signIn } = useAuth();
   const [serverUrl, setServerUrl] = useState('');
@@ -480,7 +482,7 @@ export default function ConnectScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -682,4 +684,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: typography.size.sm * 1.6,
   },
-});
+}));

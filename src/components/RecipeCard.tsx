@@ -3,7 +3,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { recipeImageSource } from '../lib/mealieApi';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles } from '../theme';
 import type { RecipeSummary } from '../types';
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default function RecipeCard({ recipe, onPress }: Props) {
+  const styles = useStyles();
   const { serverUrl, token } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const [imgError, setImgError] = useState(false);
@@ -59,7 +60,7 @@ export default function RecipeCard({ recipe, onPress }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
@@ -124,4 +125,4 @@ const styles = StyleSheet.create({
     fontSize: typography.size.xs,
     color: colors.textDisabled,
   },
-});
+}));

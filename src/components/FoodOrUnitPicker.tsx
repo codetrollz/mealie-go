@@ -3,7 +3,7 @@ import {
   ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 
 interface PickableItem {
   id?: string;
@@ -27,6 +27,8 @@ interface Props<T extends PickableItem> {
 export default function FoodOrUnitPicker<T extends PickableItem>({
   visible, title, initialQuery, search, create, onSelect, onClose,
 }: Props<T>) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<T[]>([]);
@@ -125,7 +127,7 @@ export default function FoodOrUnitPicker<T extends PickableItem>({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -151,4 +153,4 @@ const styles = StyleSheet.create({
   },
   resultName: { fontSize: typography.size.md, color: colors.textPrimary },
   emptyText: { color: colors.textDisabled, textAlign: 'center', fontSize: typography.size.md, marginTop: spacing.xl },
-});
+}));

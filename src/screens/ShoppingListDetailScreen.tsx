@@ -12,7 +12,7 @@ import { api } from '../lib/mealieApi';
 import { localIsoDate } from '../lib/localDate';
 import { findPossibleMatchIds } from '../lib/shoppingMatch';
 import EmptyState from '../components/EmptyState';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { RecipeSummary, ShoppingListItem, ShoppingListRecipeRef } from '../types';
 import type { ShoppingStackParams } from '../navigation/RootNavigator';
 
@@ -37,6 +37,9 @@ const isoDate = localIsoDate;
 type GroupedSection = { label: { id: string; name: string; color?: string } | null; items: ShoppingListItem[] };
 
 export default function ShoppingListDetailScreen({ navigation, route }: Props) {
+  const styles = useStyles();
+  const addRecipesStyles = useAddRecipesStyles();
+  const { colors } = useTheme();
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const { listId, listName } = route.params;
@@ -582,7 +585,7 @@ export default function ShoppingListDetailScreen({ navigation, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingTop: 56 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingBottom: spacing.sm, gap: spacing.sm },
   back: { fontSize: 28, color: colors.textSecondary, width: 32 },
@@ -625,9 +628,9 @@ const styles = StyleSheet.create({
   addSubmitText: { color: colors.textInverse, fontWeight: typography.weight.semibold, fontSize: typography.size.md },
   errorText: { color: colors.error, fontSize: typography.size.md },
   retryText: { color: colors.primary, fontSize: typography.size.md },
-});
+}));
 
-const addRecipesStyles = StyleSheet.create({
+const useAddRecipesStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -661,4 +664,4 @@ const addRecipesStyles = StyleSheet.create({
     paddingVertical: spacing.md + 2, alignItems: 'center',
   },
   confirmBtnText: { color: colors.textInverse, fontSize: typography.size.lg, fontWeight: typography.weight.semibold },
-});
+}));

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OIDC_LOGIN_PATH } from '../lib/mealieApi';
 import type { ProxyHeader } from '../lib/mealieApi';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 
 interface Props {
   serverUrl: string;
@@ -99,6 +99,8 @@ true;
 }
 
 export default function OidcLoginModal({ serverUrl, proxyHeaders, providerName, onSuccess, onCancel }: Props) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
@@ -204,7 +206,7 @@ export default function OidcLoginModal({ serverUrl, proxyHeaders, providerName, 
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -226,4 +228,4 @@ const styles = StyleSheet.create({
   manualCheckText: {
     color: colors.primary, fontWeight: typography.weight.semibold, fontSize: typography.size.md,
   },
-});
+}));

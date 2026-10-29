@@ -3,7 +3,7 @@ import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { useKeepAwake } from 'expo-keep-awake';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles } from '../theme';
 
 interface CookModeStep {
   title?: string;
@@ -22,6 +22,7 @@ interface Props {
 // is held for exactly as long as Cook Mode is actually on screen and
 // released the moment it unmounts.
 function CookModeContent({ onClose, recipeName, steps, ingredientLines }: Omit<Props, 'visible'>) {
+  const styles = useStyles();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   useKeepAwake();
@@ -122,7 +123,7 @@ export default function CookModeModal({ visible, onClose, recipeName, steps, ing
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingTop: spacing.xl },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -169,4 +170,4 @@ const styles = StyleSheet.create({
   navBtnTextDisabled: { color: colors.textDisabled },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   emptyText: { color: colors.textDisabled, fontSize: typography.size.md, textAlign: 'center' },
-});
+}));

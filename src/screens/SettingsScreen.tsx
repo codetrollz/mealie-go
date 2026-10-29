@@ -9,11 +9,20 @@ import type { UnitSystemPreference } from '../lib/unitConversion';
 import { navigateToGuide } from '../navigation/navigateToGuide';
 import { SUPPORTED_LANGUAGES, setLanguage } from '../i18n';
 import type { LanguageCode } from '../i18n';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
+import type { ThemePreference } from '../theme';
+
+const THEME_CHOICES: { value: ThemePreference; labelKey: string }[] = [
+  { value: 'system', labelKey: 'settings.themeSystem' },
+  { value: 'light', labelKey: 'settings.themeLight' },
+  { value: 'dark', labelKey: 'settings.themeDark' },
+];
 
 export default function SettingsScreen() {
+  const styles = useStyles();
   const { t, i18n } = useTranslation();
   const { user, serverUrl, logout } = useAuth();
+  const { preference, setPreference } = useTheme();
   const navigation = useNavigation();
   const [unitSystem, setUnitSystem] = useState<UnitSystemPreference>('original');
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
@@ -66,6 +75,24 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>{t('settings.preferences')}</Text>
         <View style={styles.card}>
+          <View style={styles.prefRow}>
+            <Text style={styles.prefLabel}>{t('settings.appearance')}</Text>
+            <View style={styles.segmented}>
+              {THEME_CHOICES.map(({ value, labelKey }) => (
+                <TouchableOpacity
+                  key={value}
+                  style={[styles.segment, preference === value && styles.segmentActive]}
+                  onPress={() => setPreference(value)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: preference === value }}
+                >
+                  <Text style={[styles.segmentText, preference === value && styles.segmentTextActive]}>
+                    {t(labelKey)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
           <View style={styles.prefRow}>
             <Text style={styles.prefLabel}>{t('settings.ingredientUnits')}</Text>
             <View style={styles.segmented}>
@@ -135,6 +162,7 @@ export default function SettingsScreen() {
 }
 
 function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  const rowStyles = useRowStyles();
   return (
     <View style={rowStyles.row}>
       <Text style={rowStyles.label}>{label}</Text>
@@ -143,7 +171,7 @@ function Row({ label, value, mono }: { label: string; value: string; mono?: bool
   );
 }
 
-const rowStyles = StyleSheet.create({
+const useRowStyles = makeStyles((colors) => StyleSheet.create({
   row: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: spacing.sm + 2,
@@ -152,9 +180,9 @@ const rowStyles = StyleSheet.create({
   label: { width: 90, fontSize: typography.size.md, color: colors.textSecondary },
   value: { flex: 1, fontSize: typography.size.md, color: colors.textPrimary, textAlign: 'right' },
   mono: { fontFamily: 'monospace', fontSize: typography.size.sm },
-});
+}));
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { paddingTop: 56, paddingBottom: spacing.xxl, gap: spacing.lg },
   pageTitle: {
@@ -204,4 +232,4 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, paddingVertical: spacing.md, alignItems: 'center',
   },
   signOutText: { color: colors.error, fontSize: typography.size.md, fontWeight: typography.weight.medium },
-});
+}));

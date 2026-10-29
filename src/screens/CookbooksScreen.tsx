@@ -8,7 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useCookbooks } from '../hooks/useCookbooks';
 import EmptyState from '../components/EmptyState';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { Cookbook } from '../types';
 import type { CookbooksStackParams } from '../navigation/RootNavigator';
 
@@ -17,6 +17,8 @@ type Props = {
 };
 
 export default function CookbooksScreen({ navigation }: Props) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { cookbooks, loading, error, refresh, createCookbook, updateCookbook, deleteCookbook } = useCookbooks();
 
@@ -190,7 +192,7 @@ export default function CookbooksScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingTop: 56 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -261,4 +263,4 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.6 },
   modalConfirmText: { color: colors.textInverse, fontSize: typography.size.md, fontWeight: typography.weight.semibold },
-});
+}));

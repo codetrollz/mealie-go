@@ -7,7 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { api } from '../lib/mealieApi';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { RecipesStackParams } from '../navigation/RootNavigator';
 
 type Props = {
@@ -17,6 +17,8 @@ type Props = {
 type Mode = 'url' | 'manual' | 'image';
 
 export default function AddRecipeScreen({ navigation }: Props) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t, i18n } = useTranslation();
   const [mode, setMode] = useState<Mode>('url');
   const [importProgress, setImportProgress] = useState('');
@@ -252,6 +254,8 @@ export default function AddRecipeScreen({ navigation }: Props) {
 }
 
 function ParseToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   return (
     <TouchableOpacity style={styles.parseRow} onPress={() => onChange(!value)} activeOpacity={0.7}>
@@ -266,7 +270,7 @@ function ParseToggle({ value, onChange }: { value: boolean; onChange: (v: boolea
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   progressText: {
     fontSize: typography.size.sm,
     color: colors.textSecondary,
@@ -415,4 +419,4 @@ const styles = StyleSheet.create({
     fontWeight: typography.weight.medium,
     color: colors.textPrimary,
   },
-});
+}));

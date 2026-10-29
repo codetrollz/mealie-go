@@ -12,7 +12,7 @@ import RecipeFilterModal from '../components/RecipeFilterModal';
 import RecipeSortBar from '../components/RecipeSortBar';
 import ActiveFilterChips from '../components/ActiveFilterChips';
 import EmptyState from '../components/EmptyState';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { CookbooksStackParams, MainTabParams } from '../navigation/RootNavigator';
 import type { RecipeSummary } from '../types';
 
@@ -24,6 +24,8 @@ type Props = {
 type FilterKey = keyof RecipeFilters;
 
 export default function CookbookDetailScreen({ navigation, route }: Props) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { slug, name } = route.params;
   const {
@@ -170,7 +172,7 @@ export default function CookbookDetailScreen({ navigation, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingTop: 56 },
   header: {
     flexDirection: 'row', alignItems: 'center',
@@ -204,4 +206,4 @@ const styles = StyleSheet.create({
   footerLoader: { paddingVertical: spacing.lg },
   errorText: { color: colors.error, fontSize: typography.size.md },
   retryText: { color: colors.primary, fontSize: typography.size.md },
-});
+}));

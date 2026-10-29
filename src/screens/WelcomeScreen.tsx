@@ -3,7 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { setHasSeenWelcome } from '../lib/onboarding';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles } from '../theme';
 import type { RootStackParams } from '../navigation/RootNavigator';
 
 type Props = {
@@ -11,6 +11,7 @@ type Props = {
 };
 
 export default function WelcomeScreen({ navigation }: Props) {
+  const styles = useStyles();
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
 
@@ -48,7 +49,7 @@ export default function WelcomeScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: {
     flex: 1, backgroundColor: colors.background,
     justifyContent: 'space-between', padding: spacing.lg, paddingTop: spacing.xxl * 2, paddingBottom: spacing.xl,
@@ -71,4 +72,4 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md + 2, alignItems: 'center',
   },
   secondaryBtnText: { color: colors.textSecondary, fontSize: typography.size.md, fontWeight: typography.weight.medium },
-});
+}));

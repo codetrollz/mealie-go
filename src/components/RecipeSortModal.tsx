@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles } from '../theme';
 import { nextSort, SORT_OPTIONS } from '../lib/recipeSort';
 import type { RecipeSort } from '../lib/recipeSort';
 
@@ -14,6 +14,7 @@ interface Props {
 }
 
 export default function RecipeSortModal({ visible, sort, onApply, onClose }: Props) {
+  const styles = useStyles();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
@@ -69,7 +70,7 @@ export default function RecipeSortModal({ visible, sort, onApply, onClose }: Pro
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' },
   sheet: {
     backgroundColor: colors.surface,
@@ -97,4 +98,4 @@ const styles = StyleSheet.create({
   rowArrow: { fontSize: 18, color: colors.primary, fontWeight: typography.weight.bold },
   closeBtn: { alignItems: 'center', paddingVertical: spacing.md, marginTop: spacing.sm },
   closeBtnText: { fontSize: typography.size.md, color: colors.textSecondary, fontWeight: typography.weight.medium },
-});
+}));

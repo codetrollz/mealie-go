@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles } from '../theme';
 import RecipeSortModal from './RecipeSortModal';
 import { DEFAULT_SORT, sortOption } from '../lib/recipeSort';
 import type { RecipeSort } from '../lib/recipeSort';
@@ -19,6 +19,7 @@ interface Props {
 // phone fits, and a bare sort icon wouldn't show which order is actually
 // active. This shows the current sort and opens the picker.
 export default function RecipeSortBar({ sort, onApply, count }: Props) {
+  const styles = useStyles();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
@@ -53,7 +54,7 @@ export default function RecipeSortBar({ sort, onApply, count }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   bar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     gap: spacing.sm, paddingHorizontal: spacing.md, marginBottom: spacing.sm,
@@ -69,4 +70,4 @@ const styles = StyleSheet.create({
   icon: { fontSize: 13, color: colors.textSecondary },
   text: { fontSize: typography.size.sm, color: colors.textSecondary, fontWeight: typography.weight.medium },
   textActive: { color: colors.primary },
-});
+}));

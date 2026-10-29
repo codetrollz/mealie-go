@@ -5,7 +5,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../lib/mealieApi';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import FoodOrUnitPicker from './FoodOrUnitPicker';
 import type { ParsedIngredient, RecipeFood, RecipeIngredient, RecipeUnit } from '../types';
 
@@ -48,6 +48,8 @@ type PickerField = 'food' | 'unit';
 // up/down buttons rather than drag gestures (no new native dependency),
 // same end result as Mealie's drag-to-reorder step.
 export default function IngredientParseReviewModal({ visible, ingredientLines, onCancel, onComplete }: Props) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [phase, setPhase] = useState<Phase>('loading');
@@ -299,7 +301,7 @@ export default function IngredientParseReviewModal({ visible, ingredientLines, o
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -373,4 +375,4 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md + 2, alignItems: 'center',
   },
   saveBtnText: { color: colors.textInverse, fontWeight: typography.weight.semibold, fontSize: typography.size.lg },
-});
+}));

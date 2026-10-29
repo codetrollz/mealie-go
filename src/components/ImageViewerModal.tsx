@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // as directly, and Mealie's media endpoints are all Bearer-authenticated.
 import * as FileSystem from 'expo-file-system/legacy';
 import { promptSaveOrShare } from '../lib/saveFile';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 
 export interface ViewableImage {
   // Same { uri, headers } shape the rest of the app uses for Mealie media —
@@ -28,6 +28,8 @@ interface Props {
 }
 
 export default function ImageViewerModal({ visible, image, onClose }: Props) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [saving, setSaving] = useState(false);
@@ -140,7 +142,7 @@ function safeFileName(name?: string): string {
   return cleaned || `image-${Date.now()}.jpg`;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   imageWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   image: { width: '100%', height: '100%' },
@@ -157,4 +159,4 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   buttonText: { color: '#fff', fontSize: 20, lineHeight: 24 },
-});
+}));

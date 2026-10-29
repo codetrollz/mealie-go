@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles } from '../theme';
 import type { GuideSection } from '../navigation/navigateToGuide';
 import type { RootStackParams } from '../navigation/RootNavigator';
 
@@ -27,6 +27,7 @@ const SECTION_ICONS: Record<GuideSection, string> = {
 };
 
 export default function GuideScreen({ navigation }: Props) {
+  const styles = useStyles();
   const { t } = useTranslation();
   const route = useRoute<RouteProp<RootStackParams, 'Guide'>>();
   const scrollRef = useRef<ScrollView>(null);
@@ -91,7 +92,7 @@ export default function GuideScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -112,4 +113,4 @@ const styles = StyleSheet.create({
   tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   bullet: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.primary, marginTop: 8 },
   tipText: { flex: 1, fontSize: typography.size.sm, color: colors.textSecondary, lineHeight: typography.size.sm * 1.5 },
-});
+}));

@@ -18,7 +18,7 @@ import RecipeFilterModal from '../components/RecipeFilterModal';
 import RecipeSortBar from '../components/RecipeSortBar';
 import ActiveFilterChips from '../components/ActiveFilterChips';
 import EmptyState from '../components/EmptyState';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { RecipeSummary } from '../types';
 import type { RecipesStackParams } from '../navigation/RootNavigator';
 
@@ -29,6 +29,8 @@ type Props = {
 type FilterKey = keyof RecipeFilters;
 
 export default function RecipesScreen({ navigation }: Props) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const {
     recipes, loading, loadingMore, error, search, setSearch,
@@ -251,7 +253,7 @@ export default function RecipesScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingTop: 56 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -286,4 +288,4 @@ const styles = StyleSheet.create({
   retryText: { color: colors.primary, fontSize: typography.size.md, fontWeight: typography.weight.medium },
   footerLoader: { paddingVertical: spacing.lg },
   footerText: { textAlign: 'center', color: colors.textDisabled, fontSize: typography.size.sm, paddingVertical: spacing.lg },
-});
+}));

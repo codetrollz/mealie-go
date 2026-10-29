@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../lib/mealieApi';
 import { useRecipeFilterOptions } from '../hooks/useRecipeFilterOptions';
 import EmptyState from '../components/EmptyState';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { RecipeFood, RecipeSuggestion, RecipeTool } from '../types';
 import type { RecipesStackParams } from '../navigation/RootNavigator';
 
@@ -26,6 +26,8 @@ function Picker({
   selected: Set<string>;
   onToggle: (id: string) => void;
 }) {
+  const pickerStyles = usePickerStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const filtered = search.trim()
@@ -66,6 +68,8 @@ function Picker({
 }
 
 export default function RecipeSuggestionsScreen({ navigation }: Props) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [foods, setFoods] = useState<RecipeFood[]>([]);
@@ -233,7 +237,7 @@ export default function RecipeSuggestionsScreen({ navigation }: Props) {
   );
 }
 
-const pickerStyles = StyleSheet.create({
+const usePickerStyles = makeStyles((colors) => StyleSheet.create({
   container: { gap: spacing.sm, marginBottom: spacing.lg },
   label: {
     fontSize: typography.size.xs, fontWeight: typography.weight.semibold,
@@ -253,9 +257,9 @@ const pickerStyles = StyleSheet.create({
   chipText: { fontSize: typography.size.sm, color: colors.textSecondary, fontWeight: typography.weight.medium },
   chipTextActive: { color: colors.textInverse },
   emptyText: { color: colors.textDisabled, fontSize: typography.size.sm },
-});
+}));
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingTop: 56 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -282,4 +286,4 @@ const styles = StyleSheet.create({
   resultName: { fontSize: typography.size.md, fontWeight: typography.weight.semibold, color: colors.textPrimary },
   haveEverything: { fontSize: typography.size.sm, color: colors.success },
   missingText: { fontSize: typography.size.sm, color: colors.textSecondary },
-});
+}));

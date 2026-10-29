@@ -22,7 +22,7 @@ import {
   getUnitSystemPreference, setUnitSystemPreference,
 } from '../lib/unitConversion';
 import type { UnitSystemPreference } from '../lib/unitConversion';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { Recipe, RecipeComment, RecipeShareToken, ShoppingList } from '../types';
 import type { RecipesStackParams } from '../navigation/RootNavigator';
 
@@ -34,6 +34,7 @@ type Props = {
 type ActiveTab = 'ingredients' | 'steps' | 'notes' | 'comments';
 
 function StarRating({ rating, onRate }: { rating: number; onRate: (r: number) => void }) {
+  const { colors } = useTheme();
   return (
     <View style={{ flexDirection: 'row', gap: spacing.xs }}>
       {[1, 2, 3, 4, 5].map(star => (
@@ -109,6 +110,10 @@ function buildRecipePdfHtml(recipe: Recipe, imageTag: string): string {
 }
 
 export default function RecipeDetailScreen({ navigation, route }: Props) {
+  const styles = useStyles();
+  const shareStyles = useShareStyles();
+  const listPickerStyles = useListPickerStyles();
+  const { colors } = useTheme();
   const { t, i18n: i18nInstance } = useTranslation();
   const { slug, name } = route.params;
   const { serverUrl, token, user } = useAuth();
@@ -887,6 +892,7 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
 }
 
 function MetaStat({ label, value }: { label: string; value: string }) {
+  const metaStyles = useMetaStyles();
   return (
     <View style={metaStyles.container}>
       <View style={metaStyles.valueBox}>
@@ -898,6 +904,7 @@ function MetaStat({ label, value }: { label: string; value: string }) {
 }
 
 function NutrStat({ label, value }: { label: string; value: string }) {
+  const nutrStyles = useNutrStyles();
   return (
     <View style={nutrStyles.cell}>
       <Text style={nutrStyles.value}>{value}</Text>
@@ -906,7 +913,7 @@ function NutrStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-const metaStyles = StyleSheet.create({
+const useMetaStyles = makeStyles((colors) => StyleSheet.create({
   // justifyContent: 'flex-end' anchors each stat's label to the bottom of
   // the row regardless of how many lines its value wraps to (e.g. "15
   // minutes" vs "4 hours 5 minutes") — otherwise labels for shorter values
@@ -918,15 +925,15 @@ const metaStyles = StyleSheet.create({
   valueBox: { minHeight: 18 * 2, justifyContent: 'center' },
   value: { fontSize: typography.size.md, lineHeight: 18, fontWeight: typography.weight.semibold, color: colors.textPrimary, textAlign: 'center' },
   label: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 2 },
-});
+}));
 
-const nutrStyles = StyleSheet.create({
+const useNutrStyles = makeStyles((colors) => StyleSheet.create({
   cell: { alignItems: 'center', width: '25%', paddingVertical: spacing.xs },
   value: { fontSize: typography.size.sm, fontWeight: typography.weight.semibold, color: colors.textPrimary },
   label: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 1 },
-});
+}));
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   scroll: { paddingBottom: spacing.xxl },
   centered: {
@@ -1075,9 +1082,9 @@ const styles = StyleSheet.create({
   deleteButtonText: { color: colors.error, fontSize: typography.size.md, fontWeight: typography.weight.medium },
   errorText: { color: colors.error, fontSize: typography.size.md },
   retryText: { color: colors.primary, fontSize: typography.size.md },
-});
+}));
 
-const shareStyles = StyleSheet.create({
+const useShareStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -1099,9 +1106,9 @@ const shareStyles = StyleSheet.create({
   tokenExpiry: { fontSize: typography.size.xs, color: colors.textDisabled },
   tokenLink: { fontSize: typography.size.sm, color: colors.textPrimary, marginTop: 2 },
   tokenAction: { fontSize: typography.size.sm, color: colors.primary, fontWeight: typography.weight.medium },
-});
+}));
 
-const listPickerStyles = StyleSheet.create({
+const useListPickerStyles = makeStyles((colors) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
   content: {
     backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg,
@@ -1119,4 +1126,4 @@ const listPickerStyles = StyleSheet.create({
     paddingVertical: spacing.md, alignItems: 'center',
   },
   cancelBtnText: { color: colors.textSecondary, fontSize: typography.size.md },
-});
+}));
