@@ -6,6 +6,7 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import * as Print from 'expo-print';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
 import { useAuth } from '../context/AuthContext';
@@ -108,6 +109,8 @@ function buildRecipePdfHtml(recipe: Recipe, imageTag: string): string {
     </html>
   `;
 }
+
+const KEEP_AWAKE_TAG = 'recipe-detail';
 
 export default function RecipeDetailScreen({ navigation, route }: Props) {
   const styles = useStyles();
@@ -248,6 +251,14 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
   // though the server-side save succeeded (confirmed by reopening Edit,
   // which always fetches fresh on its own mount).
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  // Keep the screen on while a recipe is open, so it doesn't time out mid-cook.
+  // Tied to focus, not mount: a recipe left open underneath Edit shouldn't hold
+  // the screen awake. Its own tag keeps it independent of Cook Mode's wake lock.
+  useFocusEffect(useCallback(() => {
+    activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => {});
+    return () => { deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => {}); };
+  }, []));
 
   useEffect(() => { getUnitSystemPreference().then(setUnitSystem); }, []);
 
