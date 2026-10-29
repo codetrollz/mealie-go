@@ -212,7 +212,7 @@ Base URL: whatever the user entered on ConnectScreen.
 | POST | `/api/recipes` | Body: `{ name }` → returns slug string |
 | POST | `/api/recipes/create/url` | Body: `{ url }` → returns slug string. **Not** `/create-url` (the old path) — current Mealie versions moved this under `/create/url`, grouped with the streaming (`/create/url/stream`) and bulk (`/create/url/bulk`) variants; the old flat path now gets matched by `/recipes/{slug}` instead (treating "create-url" as a slug), which returns 405 since that route doesn't support POST. **The app no longer calls this directly** — only as a fallback when the stream route below 404s (servers older than v3.13.0). |
 | POST | `/api/recipes/create/url/stream` | Same body, answered as Server-Sent Events: `progress` `{message}` (translated via `Accept-Language`), then `done` `{slug}` or `error` `{message}`. **This is what URL import uses** (v1.8.2+). See below. |
-| PUT | `/api/recipes/{slug}` | Full recipe body |
+| PUT | `/api/recipes/{slug}` | Full recipe body. Returns the saved recipe. **Renaming regenerates the slug**, so the old one 404s afterwards: `RecipeEditScreen` passes the returned slug and name to the `RecipeDetail` below it via `popTo`. |
 | DELETE | `/api/recipes/{slug}` | |
 
 **URL import must use the stream route — a reverse proxy will time out the plain one (HTTP 524).**
