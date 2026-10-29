@@ -8,6 +8,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { useMealPlan } from '../hooks/useMealPlan';
 import { api } from '../lib/mealieApi';
+import { localIsoDate } from '../lib/localDate';
 import { navigateToGuide } from '../navigation/navigateToGuide';
 import type { MealPlanStackParams } from '../navigation/RootNavigator';
 import EmptyState from '../components/EmptyState';
@@ -35,9 +36,7 @@ function mondayOfWeek(date: Date): Date {
   return d;
 }
 
-function isoDate(date: Date): string {
-  return date.toISOString().split('T')[0];
-}
+const isoDate = localIsoDate;
 
 type AddMode = 'recipe' | 'note';
 

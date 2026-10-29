@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/mealieApi';
+import { localIsoDate } from '../lib/localDate';
 import type { MealPlanEntry, CreateMealPlanEntry } from '../types';
 
 function weekBounds(date: Date): { start: string; end: string } {
@@ -9,8 +10,7 @@ function weekBounds(date: Date): { start: string; end: string } {
   monday.setDate(d.getDate() - ((day + 6) % 7));
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
-  const fmt = (dt: Date) => dt.toISOString().split('T')[0];
-  return { start: fmt(monday), end: fmt(sunday) };
+  return { start: localIsoDate(monday), end: localIsoDate(sunday) };
 }
 
 export function useMealPlan(weekDate: Date) {
