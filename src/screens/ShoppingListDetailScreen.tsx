@@ -44,7 +44,7 @@ export default function ShoppingListDetailScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { listId, listName } = route.params;
   const {
-    list, labels, loading, error, refresh,
+    list, labels, labelSettings, loading, error, refresh,
     addItem, toggleItem, deleteItem,
     addFromMealPlanWeeks, addRecipes, removeRecipe, mergeDuplicates, duplicateCount,
   } = useShoppingListDetail(listId);
@@ -259,8 +259,9 @@ export default function ShoppingListDetailScreen({ navigation, route }: Props) {
   const possibleMatchIds = useMemo(() => findPossibleMatchIds(unchecked), [unchecked]);
 
   // Group unchecked by label
-  // Sections follow the label order saved on this list in Mealie, not the global label list order.
-  const orderedLabels = useMemo(() => orderLabels(labels, list?.labelSettings), [labels, list?.labelSettings]);
+  // Sections follow the label order saved on this list in Mealie (or, while that is still the A-Z default,
+  // the order of the user's latest customised list), not the global label list order.
+  const orderedLabels = useMemo(() => orderLabels(labels, labelSettings), [labels, labelSettings]);
   const groups = groupByLabel(unchecked, orderedLabels);
   const hasLabels = labels.length > 0;
 

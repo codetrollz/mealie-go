@@ -4,7 +4,7 @@ import { api } from '../../lib/mealieApi';
 
 jest.mock('../../lib/mealieApi', () => ({
   api: {
-    getShoppingList: jest.fn(), getShoppingLabels: jest.fn(), updateShoppingItem: jest.fn(), deleteShoppingItem: jest.fn(),
+    getShoppingList: jest.fn(), getShoppingLists: jest.fn(), getShoppingLabels: jest.fn(), updateShoppingItem: jest.fn(), deleteShoppingItem: jest.fn(),
   },
 }));
 
@@ -69,4 +69,40 @@ test('after a successful merge the list is re-read so the shown text is the serv
   const reads = (api.getShoppingList as jest.Mock).mock.calls.length;
   await act(async () => { await result.current.mergeDuplicates(); });
   expect((api.getShoppingList as jest.Mock).mock.calls.length).toBeGreaterThan(reads);
+});
+
+describe('section order fallback', () => {
+  const lab = (id: string, name: string) => ({ id, groupId: 'g', householdId: 'h', name });
+  const labels = [lab('d', 'Dairy'), lab('m', 'Meat'), lab('p', 'Produce')];
+  const st = (labelId: string, position: number) => ({ id: `s${labelId}`, shoppingListId: 'x', labelId, position });
+  const azSettings = [st('d', 0), st('m', 1), st('p', 2)];
+  const mine = [st('p', 0), st('m', 1), st('d', 2)];
+
+  function setup(current: unknown[], others: unknown[] = [{ id: 'l' }, { id: 'nov2', updatedAt: '2026-10-30' }]) {
+    (api.getShoppingLabels as jest.Mock).mockResolvedValue({ items: labels });
+    (api.getShoppingLists as jest.Mock).mockResolvedValue({ items: others });
+    (api.getShoppingList as jest.Mock).mockImplementation(async (id: string) =>
+      id === 'nov2' ? { id, listItems: [], labelSettings: mine } : { id, name: 'L', listItems: [], labelSettings: current });
+    return renderHook(() => useShoppingListDetail('l'));
+  }
+
+  test('a list still in A-Z order borrows the order of the latest customised list', async () => {
+    const { result } = await setup(azSettings);
+    await waitFor(() => expect(result.current.labelSettings).toBe(mine));
+  });
+
+  test('a list with its own custom order keeps it and fetches nothing else', async () => {
+    const own = [st('m', 0), st('d', 1), st('p', 2)];
+    const { result } = await setup(own);
+    await waitFor(() => expect(result.current.list).not.toBeNull());
+    expect(result.current.labelSettings).toBe(own);
+    expect(api.getShoppingLists).not.toHaveBeenCalled();
+  });
+
+  test('while nothing better is found the list shows its own A-Z settings', async () => {
+    const { result } = await setup(azSettings, [{ id: 'l' }]);
+    await waitFor(() => expect(api.getShoppingLists).toHaveBeenCalled());
+    await waitFor(() => expect(result.current.list).not.toBeNull());
+    expect(result.current.labelSettings).toBe(azSettings);
+  });
 });

@@ -1,4 +1,4 @@
-import { groupByLabel, orderLabels } from '../shoppingGroups';
+import { findBorrowedLabelSettings, groupByLabel, isDefaultLabelOrder, orderLabels } from '../shoppingGroups';
 import type { ShoppingLabel, ShoppingListItem } from '../../types';
 
 const label = (id: string): ShoppingLabel => ({ id, groupId: 'g', householdId: 'h', name: id });
@@ -61,4 +61,49 @@ test('the reported case: Produce first on the list but last in the label list', 
   const ordered = orderLabels(labels, [setting('produce', 0), setting('meat', 3), setting('dairy', 11)]);
   const sections = groupByLabel([item('milk', 'dairy'), item('beef', 'meat'), item('onion', 'produce')], ordered);
   expect(sections.map(g => g.label?.id)).toEqual(['produce', 'meat', 'dairy']);
+});
+
+describe('default (A-Z) label order', () => {
+  const named = (id: string, name: string): ShoppingLabel => ({ id, groupId: 'g', householdId: 'h', name });
+  const labels = [named('d', 'Dairy'), named('m', 'Meat'), named('p', 'Produce'), named('a', 'alcohol')];
+  const az = [setting('a', 0), setting('d', 1), setting('m', 2), setting('p', 3)];   // case-insensitive A-Z
+  const custom = [setting('p', 0), setting('a', 1), setting('m', 2), setting('d', 3)];
+
+  test('A-Z by name is the default, a custom order and a too-small order are judged correctly', () => {
+    expect(isDefaultLabelOrder(labels, az)).toBe(true);
+    expect(isDefaultLabelOrder(labels, custom)).toBe(false);
+    expect(isDefaultLabelOrder(labels, undefined)).toBe(true);
+    expect(isDefaultLabelOrder(labels, [setting('p', 0), setting('d', 1)])).toBe(true);
+  });
+
+  test('judges by position, not by array order', () => {
+    expect(isDefaultLabelOrder(labels, [...az].reverse())).toBe(true);
+    expect(isDefaultLabelOrder(labels, [...custom].reverse())).toBe(false);
+  });
+
+  const list = (id: string, updatedAt: string) => ({ id, updatedAt });
+  const run = (lists: ReturnType<typeof list>[], byId: Record<string, any>) =>
+    findBorrowedLabelSettings('cur', labels, async () => ({ items: lists }), async id => byId[id]);
+
+  test('borrows from the most recently updated other list that has a custom order', async () => {
+    const found = await run(
+      [list('cur', '2026-10-30'), list('old', '2026-10-01'), list('az', '2026-10-29'), list('new', '2026-10-28')],
+      { old: { labelSettings: [setting('m', 0), setting('d', 1), setting('p', 2)] }, az: { labelSettings: az }, new: { labelSettings: custom } },
+    );
+    expect(found).toBe(custom);   // 'az' is newer than 'new' but is only the default, so skipped
+  });
+
+  test('no custom list, a failing request, or no other lists: no fallback', async () => {
+    expect(await run([list('az', '2026-10-29')], { az: { labelSettings: az } })).toBeUndefined();
+    expect(await run([list('cur', '2026-10-30')], {})).toBeUndefined();
+    expect(await findBorrowedLabelSettings('cur', labels, async () => { throw new Error('offline'); }, async () => ({}))).toBeUndefined();
+    expect(await run([list('x', '2026-10-29')], {})).toBeUndefined();   // detail fetch throws on undefined
+  });
+
+  test('only looks at the 5 newest other lists', async () => {
+    const lists = ['1', '2', '3', '4', '5', '6'].map((n, i) => list(`l${n}`, `2026-10-0${9 - i}`));
+    const byId = Object.fromEntries(lists.map(l => [l.id, { labelSettings: az }]));
+    byId.l6 = { labelSettings: custom };
+    expect(await run(lists, byId)).toBeUndefined();
+  });
 });

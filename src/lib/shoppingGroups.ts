@@ -47,3 +47,52 @@ export function orderLabels(labels: ShoppingLabel[], settings?: ShoppingListLabe
     })
     .map(x => x.label);
 }
+
+const byName = (a: string, b: string) => (a.toLowerCase() < b.toLowerCase() ? -1 : a.toLowerCase() > b.toLowerCase() ? 1 : 0);
+
+/**
+ * True when the saved section order is just A-Z by label name, which is what Mealie seeds every new
+ * list with (it has no global order), so it says nothing about what the user wants. With fewer than
+ * three labelled settings there is no order to speak of, so that counts as default too.
+ */
+export function isDefaultLabelOrder(labels: ShoppingLabel[], settings?: ShoppingListLabelSetting[]): boolean {
+  if (!settings?.length) return true;
+  const name = new Map(labels.map(l => [l.id, l.name]));
+  const named = [...settings]
+    .sort((a, b) => a.position - b.position)
+    .map(s => name.get(s.labelId) ?? s.label?.name)
+    .filter((n): n is string => !!n);
+  if (named.length < 3) return true;
+  return named.every((n, i) => i === 0 || byName(named[i - 1], n) <= 0);
+}
+
+type ListRef = { id: string; updatedAt?: string; createdAt?: string };
+
+/**
+ * For a list still in the default A-Z order: the label settings of the user's most recently
+ * updated other list that has a custom order (at most `limit` lists are looked at), or undefined.
+ * Labels are shared across lists, so those positions apply to this list's labels directly.
+ * Any failure just means no fallback.
+ */
+export async function findBorrowedLabelSettings(
+  currentId: string,
+  labels: ShoppingLabel[],
+  getLists: () => Promise<{ items: ListRef[] }>,
+  getList: (id: string) => Promise<{ labelSettings?: ShoppingListLabelSetting[] }>,
+  limit = 5,
+): Promise<ShoppingListLabelSetting[] | undefined> {
+  try {
+    const when = (l: ListRef) => l.updatedAt ?? l.createdAt ?? '';
+    const others = (await getLists()).items
+      .filter(l => l.id !== currentId)
+      .sort((a, b) => (when(a) < when(b) ? 1 : when(a) > when(b) ? -1 : 0))
+      .slice(0, limit);
+    for (const other of others) {
+      const settings = (await getList(other.id)).labelSettings;
+      if (settings?.length && !isDefaultLabelOrder(labels, settings)) return settings;
+    }
+  } catch {
+    // no fallback
+  }
+  return undefined;
+}

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/mealieApi';
 import { planMerge } from '../lib/shoppingMerge';
-import type { ShoppingLabel, ShoppingList, ShoppingListItem, ShoppingListWithItems } from '../types';
+import { findBorrowedLabelSettings, isDefaultLabelOrder } from '../lib/shoppingGroups';
+import type { ShoppingLabel, ShoppingList, ShoppingListItem, ShoppingListLabelSetting, ShoppingListWithItems } from '../types';
 
 export function useShoppingLists() {
   const [lists, setLists] = useState<ShoppingList[]>([]);
@@ -60,6 +61,22 @@ export function useShoppingListDetail(listId: string) {
   }, [listId]);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  // Mealie seeds every new list with A-Z sections and has no global order, so a list still in
+  // that default borrows the section order of the user's latest list that has a custom one.
+  const [borrowedSettings, setBorrowedSettings] = useState<ShoppingListLabelSetting[] | undefined>();
+  const hasDefaultOrder = useMemo(
+    () => !!list && labels.length > 0 && isDefaultLabelOrder(labels, list.labelSettings),
+    [list, labels],
+  );
+  useEffect(() => {
+    if (!hasDefaultOrder) { setBorrowedSettings(undefined); return; }
+    let cancelled = false;
+    findBorrowedLabelSettings(listId, labels, api.getShoppingLists, api.getShoppingList)
+      .then(found => { if (!cancelled) setBorrowedSettings(found); });
+    return () => { cancelled = true; };
+  }, [listId, labels, hasDefaultOrder]);
+  const labelSettings = hasDefaultOrder ? borrowedSettings ?? list?.labelSettings : list?.labelSettings;
 
   const addItem = useCallback(async (note: string, quantity?: number, labelId?: string) => {
     const item = await api.addShoppingItem(listId, note, quantity, labelId);
@@ -155,7 +172,7 @@ export function useShoppingListDetail(listId: string) {
   const duplicateCount = list ? planMerge(list.listItems).removedIds.length : 0;
 
   return {
-    list, labels, loading, error, refresh,
+    list, labels, labelSettings, loading, error, refresh,
     addItem, toggleItem, deleteItem,
     addFromMealPlanWeeks, addRecipes, removeRecipe, mergeDuplicates, duplicateCount,
   };
