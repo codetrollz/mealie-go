@@ -774,7 +774,10 @@ export const api = {
 
   // Shopping labels
   getShoppingLabels: () =>
-    request<PaginatedResponse<ShoppingLabel>>('/api/households/shopping/labels?perPage=100'),
+    // Labels live under /api/groups/labels (confirmed against Mealie v3.29's OpenAPI). The old
+    // /api/households/shopping/labels does not exist: the server answers it with its web page,
+    // json() fails, and the screen swallowed that, so grouping silently never turned on.
+    request<PaginatedResponse<ShoppingLabel>>('/api/groups/labels?perPage=100'),
 
   // Add one or more recipes' ingredients to a shopping list in a single request.
   // The endpoint takes a JSON array even for one recipe — omitting

@@ -402,6 +402,12 @@ Public link format for recipients (Vue SPA route, not an API route):
 | POST | `/api/households/shopping/lists/{id}/recipe` | **Body is a JSON array**, even for one recipe: `[{ recipeId, recipeIncrementQuantity }]`. Omit `recipeIngredients` and the server pulls each recipe's full ingredient list itself. The original code here sent a bare object instead of an array — would have 422'd the first time it was actually exercised; fixed as `api.addRecipesToShoppingList()`. There's also a deprecated singular `/recipe/{recipe_id}` route; don't use it, the bulk one replaces it. |
 | POST | `/api/households/shopping/lists/{id}/recipe/{recipeId}/delete` | Removes/decrements exactly the ingredients that recipe contributed. Body: `{ recipeDecrementQuantity }` (defaults to 1 server-side; the app always sends 1). `api.removeRecipeFromShoppingList()`. **Not** the same shape as the deprecated singular *add* route above — this one has a `/delete` suffix and is the real, non-deprecated removal endpoint. |
 
+**Shopping labels come from `GET /api/groups/labels`, not `/api/households/shopping/labels`.** The household
+route does not exist in Mealie 3.x: the server answers it with its web page (HTTP 200, HTML), `json()` throws, and
+`useShoppingListDetail` swallows that, so the list silently never grouped by label (Produce, Meat, Dairy...).
+`groupByLabel` (`src/lib/shoppingGroups.ts`) builds the sections in label order and keeps any item whose label no
+longer exists in an unlabelled section instead of dropping it.
+
 **"Merge duplicates" (`planMerge` in `src/lib/shoppingMerge.ts`) groups by identity, never by note.** Two items are
 duplicates only if they are the same food *and* the same unit, or identical free-text lines with no food;
 either way the quantities are added, never dropped. A food or unit that arrives without an id is matched by

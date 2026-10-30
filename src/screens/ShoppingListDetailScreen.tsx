@@ -11,6 +11,7 @@ import { useShoppingListDetail } from '../hooks/useShoppingLists';
 import { api } from '../lib/mealieApi';
 import { localIsoDate } from '../lib/localDate';
 import { findPossibleMatchIds } from '../lib/shoppingMatch';
+import { groupByLabel } from '../lib/shoppingGroups';
 import EmptyState from '../components/EmptyState';
 import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { RecipeSummary, ShoppingListItem, ShoppingListRecipeRef } from '../types';
@@ -34,7 +35,6 @@ function addDays(date: Date, days: number): Date {
 }
 const isoDate = localIsoDate;
 
-type GroupedSection = { label: { id: string; name: string; color?: string } | null; items: ShoppingListItem[] };
 
 export default function ShoppingListDetailScreen({ navigation, route }: Props) {
   const styles = useStyles();
@@ -259,29 +259,7 @@ export default function ShoppingListDetailScreen({ navigation, route }: Props) {
   const possibleMatchIds = useMemo(() => findPossibleMatchIds(unchecked), [unchecked]);
 
   // Group unchecked by label
-  const buildGroups = (): GroupedSection[] => {
-    if (!list || labels.length === 0) {
-      return [{ label: null, items: unchecked }];
-    }
-    const byLabel: Record<string, ShoppingListItem[]> = {};
-    unchecked.forEach(item => {
-      const key = item.labelId ?? '_none';
-      if (!byLabel[key]) byLabel[key] = [];
-      byLabel[key].push(item);
-    });
-    const groups: GroupedSection[] = [];
-    labels.forEach(label => {
-      if (byLabel[label.id]?.length > 0) {
-        groups.push({ label, items: byLabel[label.id] });
-      }
-    });
-    if (byLabel['_none']?.length > 0) {
-      groups.push({ label: null, items: byLabel['_none'] });
-    }
-    return groups;
-  };
-
-  const groups = buildGroups();
+  const groups = groupByLabel(unchecked, labels);
   const hasLabels = labels.length > 0;
 
   const explainPossibleMatch = () => Alert.alert(
