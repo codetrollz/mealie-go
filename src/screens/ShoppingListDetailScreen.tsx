@@ -11,7 +11,7 @@ import { useShoppingListDetail } from '../hooks/useShoppingLists';
 import { api } from '../lib/mealieApi';
 import { localIsoDate } from '../lib/localDate';
 import { findPossibleMatchIds } from '../lib/shoppingMatch';
-import { groupByLabel } from '../lib/shoppingGroups';
+import { groupByLabel, orderLabels } from '../lib/shoppingGroups';
 import EmptyState from '../components/EmptyState';
 import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { RecipeSummary, ShoppingListItem, ShoppingListRecipeRef } from '../types';
@@ -259,7 +259,9 @@ export default function ShoppingListDetailScreen({ navigation, route }: Props) {
   const possibleMatchIds = useMemo(() => findPossibleMatchIds(unchecked), [unchecked]);
 
   // Group unchecked by label
-  const groups = groupByLabel(unchecked, labels);
+  // Sections follow the label order saved on this list in Mealie, not the global label list order.
+  const orderedLabels = useMemo(() => orderLabels(labels, list?.labelSettings), [labels, list?.labelSettings]);
+  const groups = groupByLabel(unchecked, orderedLabels);
   const hasLabels = labels.length > 0;
 
   const explainPossibleMatch = () => Alert.alert(

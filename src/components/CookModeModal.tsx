@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import type { LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView, ScrollView } from 'react-native-gesture-handler';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { radius, spacing, typography, makeStyles } from '../theme';
+import { COOK_SWIPE_ACTIVATE_Y, COOK_SWIPE_FAIL_X, cookSwipeDirection } from '../lib/cookSwipe';
 
 interface CookModeStep {
   title?: string;
@@ -36,6 +39,43 @@ function CookModeContent({ onClose, recipeName, steps, ingredientLines }: Omit<P
 
   const goPrev = () => setStepIndex(i => Math.max(0, i - 1));
   const goNext = () => setStepIndex(i => Math.min(total - 1, i + 1));
+
+  // Swipe up for the next step, down for the previous. The step text scrolls when it is long, so a
+  // swipe only moves on if the text was already at the matching end when the finger went down.
+  const stepScrollRef = useRef<any>(null);
+  const edges = useRef({ top: true, bottom: true });
+  const startEdges = useRef({ top: true, bottom: true });
+  const sizes = useRef({ content: 0, layout: 0, offset: 0 });
+  const updateEdges = () => {
+    const { content, layout, offset } = sizes.current;
+    edges.current = { top: offset <= 2, bottom: offset + layout >= content - 2 };
+  };
+  const onStepScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => { sizes.current.offset = e.nativeEvent.contentOffset.y; updateEdges(); };
+  const onStepLayout = (e: LayoutChangeEvent) => { sizes.current.layout = e.nativeEvent.layout.height; updateEdges(); };
+  const onStepContentSize = (_w: number, h: number) => { sizes.current.content = h; updateEdges(); };
+  // A new step starts at its top.
+  useEffect(() => {
+    stepScrollRef.current?.scrollTo({ y: 0, animated: false });
+    sizes.current.offset = 0;
+    updateEdges();
+  }, [stepIndex]);
+  const stepSwipe = useMemo(() => Gesture.Pan()
+    .runOnJS(true)
+    .withTestId('cook-step-swipe')
+    .simultaneousWithExternalGesture(stepScrollRef)
+    .activeOffsetY([-COOK_SWIPE_ACTIVATE_Y, COOK_SWIPE_ACTIVATE_Y])
+    .failOffsetX([-COOK_SWIPE_FAIL_X, COOK_SWIPE_FAIL_X])
+    .onBegin(() => { startEdges.current = { ...edges.current }; })
+    .onEnd((e, success) => {
+      // A cancelled pan (system back gesture, another window taking the touch) is not a swipe.
+      if (!success) return;
+      const dir = cookSwipeDirection(e.translationY, e.translationX, startEdges.current.top, startEdges.current.bottom);
+      if (dir === 'next') goNext();
+      else if (dir === 'prev') goPrev();
+    }),
+  // goNext/goPrev only use the functional state setter, so they are safe to capture once per `total`.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [total]);
 
   return (
     <View style={styles.container}>
@@ -76,10 +116,21 @@ function CookModeContent({ onClose, recipeName, steps, ingredientLines }: Omit<P
       ) : (
         <>
           <Text style={styles.stepCounter}>{t('cookMode.stepCounter', { current: stepIndex + 1, total })}</Text>
-          <ScrollView style={styles.stepScroll} contentContainerStyle={styles.stepScrollContent}>
-            {step.title ? <Text style={styles.stepTitle}>{step.title}</Text> : null}
-            <Text style={styles.stepText}>{step.text}</Text>
-          </ScrollView>
+          <GestureDetector gesture={stepSwipe}>
+            <ScrollView
+              ref={stepScrollRef}
+              testID="cook-step-scroll"
+              style={styles.stepScroll}
+              contentContainerStyle={styles.stepScrollContent}
+              onScroll={onStepScroll}
+              scrollEventThrottle={16}
+              onLayout={onStepLayout}
+              onContentSizeChange={onStepContentSize}
+            >
+              {step.title ? <Text style={styles.stepTitle}>{step.title}</Text> : null}
+              <Text style={styles.stepText}>{step.text}</Text>
+            </ScrollView>
+          </GestureDetector>
 
           <View style={[styles.navBar, { paddingBottom: spacing.md + insets.bottom }]}>
             <TouchableOpacity
@@ -112,13 +163,16 @@ export default function CookModeModal({ visible, onClose, recipeName, steps, ing
 
   return (
     <Modal visible animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <CookModeContent
-        key={key}
-        onClose={onClose}
-        recipeName={recipeName}
-        steps={steps}
-        ingredientLines={ingredientLines}
-      />
+      {/* A Modal is its own native window, so gestures inside it need their own root view. */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <CookModeContent
+          key={key}
+          onClose={onClose}
+          recipeName={recipeName}
+          steps={steps}
+          ingredientLines={ingredientLines}
+        />
+      </GestureHandlerRootView>
     </Modal>
   );
 }

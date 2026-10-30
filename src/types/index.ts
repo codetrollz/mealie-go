@@ -239,9 +239,20 @@ export interface ShoppingListRecipeRef {
   recipe: RecipeSummary;
 }
 
+// Per-list order of the label sections (ShoppingListMultiPurposeLabelOut): the order Mealie's own
+// "reorder labels" screen saves, lowest position first.
+export interface ShoppingListLabelSetting {
+  id: string;
+  shoppingListId: string;
+  labelId: string;
+  position: number;
+  label?: ShoppingLabel;
+}
+
 export interface ShoppingListWithItems extends ShoppingList {
   listItems: ShoppingListItem[];
   recipeReferences?: ShoppingListRecipeRef[];
+  labelSettings?: ShoppingListLabelSetting[];
 }
 
 // Per-ingredient-line recipe attribution (ShoppingListItemRecipeRefOut

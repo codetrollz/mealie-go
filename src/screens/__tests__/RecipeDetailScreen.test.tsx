@@ -60,13 +60,13 @@ test('a failing wake lock never breaks the recipe screen', async () => {
 });
 
 // A completed horizontal pan on the tab area, as the gesture handler reports it.
-const swipe = async (translationX: number, translationY = 0) => {
+const swipe = async (translationX: number, translationY = 0, endState: typeof State.END | typeof State.CANCELLED = State.END) => {
   await screen.findByTestId('recipe-tab-area');
   await act(async () => {
     fireGestureHandler(getByGestureTestId('recipe-tab-swipe'), [
       { state: State.BEGAN, translationX: 0, translationY: 0 },
       { state: State.ACTIVE, translationX: translationX / 2, translationY: translationY / 2 },
-      { state: State.END, translationX, translationY },
+      { state: endState, translationX, translationY },
     ]);
   });
 };
@@ -107,6 +107,14 @@ test('swiping all the way across stops at the last tab', async () => {
   expect(screen.getByText('No comments yet — be the first!')).toBeTruthy();
   await swipe(200);    // back to notes
   expect(await screen.findByText('Serve over mashed potatoes.')).toBeTruthy();
+});
+
+test('a cancelled swipe does not change the tab', async () => {
+  await renderScreen(<RecipeDetailScreen navigation={nav} route={route} />);
+  expect(await screen.findByText('1 lb ground beef')).toBeTruthy();
+  await swipe(-200, 0, State.CANCELLED);
+  expect(screen.getByText('1 lb ground beef')).toBeTruthy();
+  expect(screen.queryByText(/shape into four oval patties/)).toBeNull();
 });
 
 test('tapping a tab still works', async () => {

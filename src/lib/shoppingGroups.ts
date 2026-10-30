@@ -1,4 +1,4 @@
-import type { ShoppingLabel, ShoppingListItem } from '../types';
+import type { ShoppingLabel, ShoppingListItem, ShoppingListLabelSetting } from '../types';
 
 export type GroupedSection = { label: ShoppingLabel | null; items: ShoppingListItem[] };
 
@@ -27,4 +27,23 @@ export function groupByLabel(items: ShoppingListItem[], labels: ShoppingLabel[])
   }
   if (unlabelled.length) groups.push({ label: null, items: unlabelled });
   return groups;
+}
+
+/**
+ * Labels in the order this list's owner set in Mealie (its per-list label settings, lowest position
+ * first). A label with no setting keeps its original relative order, after the ones that have one.
+ */
+export function orderLabels(labels: ShoppingLabel[], settings?: ShoppingListLabelSetting[]): ShoppingLabel[] {
+  if (!settings?.length) return labels;
+  const position = new Map(settings.map(s => [s.labelId, s.position]));
+  return labels
+    .map((label, i) => ({ label, i }))
+    .sort((a, b) => {
+      const pa = position.get(a.label.id), pb = position.get(b.label.id);
+      if (pa !== undefined && pb !== undefined) return pa - pb || a.i - b.i;
+      if (pa !== undefined) return -1;
+      if (pb !== undefined) return 1;
+      return a.i - b.i;
+    })
+    .map(x => x.label);
 }

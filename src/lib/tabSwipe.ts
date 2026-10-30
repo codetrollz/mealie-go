@@ -35,7 +35,8 @@ export function useTabSwipe<T>(tabs: readonly T[], active: T, setActive: (tab: T
       .runOnJS(true)
       .activeOffsetX([-SWIPE_ACTIVATE_X, SWIPE_ACTIVATE_X])
       .failOffsetY([-SWIPE_FAIL_Y, SWIPE_FAIL_Y])
-      .onEnd(e => {
+      .onEnd((e, success) => {
+        if (!success) return; // a cancelled pan is not a swipe
         const target = swipeTarget(tabs, active, e.translationX, e.translationY, I18nManager.isRTL);
         if (target !== null) setActive(target);
       });

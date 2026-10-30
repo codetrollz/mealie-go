@@ -416,6 +416,17 @@ route does not exist in Mealie 3.x: the server answers it with its web page (HTT
 `groupByLabel` (`src/lib/shoppingGroups.ts`) builds the sections in label order and keeps any item whose label no
 longer exists in an unlabelled section instead of dropping it.
 
+**Section order = the order saved on the list in Mealie.** `GET /api/households/shopping/lists/{id}` returns
+`labelSettings` (`labelId` + `position`, what Mealie's "reorder labels" screen saves per list). `orderLabels`
+(`src/lib/shoppingGroups.ts`) sorts the labels by it before `groupByLabel`; a label with no setting goes after the
+ones that have one. Without this the sections followed `/api/groups/labels` order (Produce was last).
+
+**Cook Mode swipe (`src/lib/cookSwipe.ts`).** In `CookModeModal`, swiping up on the step goes to the next step and
+swiping down to the previous one. The step text is a gesture-handler `ScrollView` and the Pan runs
+`simultaneousWithExternalGesture` with it, so a long step still scrolls; a swipe only moves on if the text was already
+at the matching end (bottom for up, top for down) when the finger went down (snapshot in `onBegin`). A step that fits
+on screen is at both ends. The Modal is its own native window, so it carries its own `GestureHandlerRootView`.
+
 **"Merge duplicates" (`planMerge` in `src/lib/shoppingMerge.ts`) groups by identity, never by note.** Two items are
 duplicates only if they are the same food *and* the same unit, or identical free-text lines with no food;
 either way the quantities are added, never dropped. A food or unit that arrives without an id is matched by

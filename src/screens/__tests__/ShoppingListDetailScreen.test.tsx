@@ -48,3 +48,26 @@ test('when labels cannot be loaded the list still shows every item, ungrouped', 
   expect(screen.queryByText(/^Produce$/i)).toBeNull();
   expect(screen.getByText('paper towels')).toBeTruthy();
 });
+
+test('sections follow the label order saved on this list in Mealie, not the global label order', async () => {
+  (api.getShoppingList as jest.Mock).mockResolvedValue({
+    id: 'l', name: 'Weekly', groupId: 'g', householdId: 'h',
+    listItems: [row('1', '2 onions', 'produce'), row('2', '1 lb stew beef', 'meat'), row('3', '1 cup sour cream', 'dairy')],
+    labelSettings: [
+      { id: 's1', shoppingListId: 'l', labelId: 'produce', position: 0 },
+      { id: 's2', shoppingListId: 'l', labelId: 'meat', position: 1 },
+      { id: 's3', shoppingListId: 'l', labelId: 'dairy', position: 2 },
+    ],
+  });
+  // Mealie's global label list has Dairy first and Produce last.
+  (api.getShoppingLabels as jest.Mock).mockResolvedValue({
+    items: [
+      { id: 'dairy', name: 'Dairy', groupId: 'g', householdId: 'h' },
+      { id: 'meat', name: 'Meat', groupId: 'g', householdId: 'h' },
+      { id: 'produce', name: 'Produce', groupId: 'g', householdId: 'h' },
+    ],
+  });
+  await renderScreen(<ShoppingListDetailScreen navigation={nav} route={route} />);
+  const headers = await screen.findAllByText(/^(Meat|Produce|Dairy)$/i);
+  expect(headers.map(h => String(h.props.children).toLowerCase())).toEqual(['produce', 'meat', 'dairy']);
+});
