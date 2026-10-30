@@ -203,8 +203,12 @@ export default function ShoppingListDetailScreen({ navigation, route }: Props) {
           text: t('shopping.merge'),
           style: 'destructive',
           onPress: async () => {
-            const removed = await mergeDuplicates();
-            if (removed) Alert.alert(t('shopping.doneTitle'), t('shopping.removedDuplicatesMsg', { count: removed }));
+            try {
+              const removed = await mergeDuplicates();
+              if (removed) Alert.alert(t('shopping.doneTitle'), t('shopping.removedDuplicatesMsg', { count: removed }));
+            } catch (e) {
+              Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
+            }
           },
         },
       ]

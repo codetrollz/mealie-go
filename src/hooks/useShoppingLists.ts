@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/mealieApi';
+import { planMerge } from '../lib/shoppingMerge';
 import type { ShoppingLabel, ShoppingList, ShoppingListItem, ShoppingListWithItems } from '../types';
 
 export function useShoppingLists() {
@@ -112,44 +113,32 @@ export function useShoppingListDetail(listId: string) {
     await refresh();
   }, [listId, refresh]);
 
-  // Merges items with identical note text by summing their quantities onto
-  // one "keeper" and removing the rest — NOT by just deleting the extras,
-  // which would silently throw away however much of that item the deleted
-  // duplicates represented.
+  // Merges true duplicates (same food and unit, or identical text-only lines; see
+  // planMerge) by summing quantities onto one "keeper" and removing the rest, NOT by
+  // just deleting the extras, which would silently throw away however much of that
+  // item the deleted duplicates represented.
   const mergeDuplicates = useCallback(async () => {
     if (!list) return;
-    const unchecked = list.listItems.filter(i => !i.checked);
-    const groups = new Map<string, ShoppingListItem[]>();
-    for (const item of unchecked) {
-      const key = (item.note ?? item.food?.name ?? '').trim().toLowerCase();
-      if (!key) continue;
-      const group = groups.get(key) ?? [];
-      group.push(item);
-      groups.set(key, group);
-    }
-
-    const removedIds: string[] = [];
-    const keeperUpdates: Promise<unknown>[] = [];
-    const keeperResults = new Map<string, ShoppingListItem>();
-
-    for (const group of groups.values()) {
-      if (group.length < 2) continue;
-      const [keeper, ...rest] = group;
-      rest.forEach(i => removedIds.push(i.id));
-
-      const summedQty = group.reduce((sum, i) => sum + (i.quantity ?? 0), 0);
-      if (summedQty > 0 && summedQty !== keeper.quantity) {
-        const updated = { ...keeper, quantity: summedQty };
-        keeperResults.set(keeper.id, updated);
-        keeperUpdates.push(api.updateShoppingItem(keeper.id, updated));
-      }
-    }
-
+    const { removedIds, quantityUpdates } = planMerge(list.listItems);
     if (removedIds.length === 0) return 0;
-    await Promise.all([
-      ...keeperUpdates,
-      ...removedIds.map(id => api.deleteShoppingItem(id)),
-    ]);
+
+    const keeperResults = new Map<string, ShoppingListItem>();
+    const keeperUpdates = quantityUpdates.map(({ id, quantity }) => {
+      const keeper = list.listItems.find(i => i.id === id)!;
+      const updated = { ...keeper, quantity };
+      keeperResults.set(id, updated);
+      return api.updateShoppingItem(id, updated);
+    });
+    // Updates first, then deletes: if an update fails nothing has been deleted yet, so no
+    // quantity is lost. Either way the list is re-read, so it shows what the server holds
+    // (including the recomputed `display` text).
+    try {
+      await Promise.all(keeperUpdates);
+      await Promise.all(removedIds.map(id => api.deleteShoppingItem(id)));
+    } catch (e) {
+      await refresh();
+      throw e;
+    }
     setList(prev => prev
       ? {
           ...prev,
@@ -159,22 +148,11 @@ export function useShoppingListDetail(listId: string) {
         }
       : prev
     );
+    await refresh();
     return removedIds.length;
-  }, [list]);
+  }, [list, refresh]);
 
-  const duplicateCount = (() => {
-    if (!list) return 0;
-    const unchecked = list.listItems.filter(i => !i.checked);
-    const seen = new Set<string>();
-    let count = 0;
-    for (const item of unchecked) {
-      const key = (item.note ?? item.food?.name ?? '').trim().toLowerCase();
-      if (!key) continue;
-      if (seen.has(key)) count++;
-      else seen.add(key);
-    }
-    return count;
-  })();
+  const duplicateCount = list ? planMerge(list.listItems).removedIds.length : 0;
 
   return {
     list, labels, loading, error, refresh,

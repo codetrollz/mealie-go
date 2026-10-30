@@ -402,6 +402,15 @@ Public link format for recipients (Vue SPA route, not an API route):
 | POST | `/api/households/shopping/lists/{id}/recipe` | **Body is a JSON array**, even for one recipe: `[{ recipeId, recipeIncrementQuantity }]`. Omit `recipeIngredients` and the server pulls each recipe's full ingredient list itself. The original code here sent a bare object instead of an array — would have 422'd the first time it was actually exercised; fixed as `api.addRecipesToShoppingList()`. There's also a deprecated singular `/recipe/{recipe_id}` route; don't use it, the bulk one replaces it. |
 | POST | `/api/households/shopping/lists/{id}/recipe/{recipeId}/delete` | Removes/decrements exactly the ingredients that recipe contributed. Body: `{ recipeDecrementQuantity }` (defaults to 1 server-side; the app always sends 1). `api.removeRecipeFromShoppingList()`. **Not** the same shape as the deprecated singular *add* route above — this one has a `/delete` suffix and is the real, non-deprecated removal endpoint. |
 
+**"Merge duplicates" (`planMerge` in `src/lib/shoppingMerge.ts`) groups by identity, never by note.** Two items are
+duplicates only if they are the same food *and* the same unit, or identical free-text lines with no food;
+either way the quantities are added, never dropped. A food or unit that arrives without an id is matched by
+name, and an item that has a food never falls back to its note. Updates are sent before deletes and the list
+is re-read afterwards, so a failed request cannot lose a quantity. The note is free text, usually a prep instruction ("chopped"), and an earlier
+version that grouped by `note ?? food.name` merged unrelated foods that shared a note and summed their
+quantities (a list whose items were all noted "for <recipe>" became "17 lb sausage, 16 onions"). The button's
+count and the merge both come from `planMerge`, so they cannot disagree.
+
 **Recipe↔shopping-list association is tracked server-side, confirmed against Mealie's actual schema**
 (`mealie/schema/household/group_shopping_list.py`, v3.21.0) — this isn't a client-side inference:
 - `GET .../lists/{id}` (`ShoppingListOut`) includes `recipeReferences`: one entry per recipe that's
