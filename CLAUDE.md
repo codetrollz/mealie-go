@@ -421,6 +421,12 @@ longer exists in an unlabelled section instead of dropping it.
 (`src/lib/shoppingGroups.ts`) sorts the labels by it before `groupByLabel`; a label with no setting goes after the
 ones that have one. Without this the sections followed `/api/groups/labels` order (Produce was last).
 
+**Mealie has no global section order.** `create_one_list` seeds every new list's `labelSettings` A-Z by name (the
+index and detail both return them). So a list still in that order (`isDefaultLabelOrder`, which accepts code-point,
+case-insensitive or locale sorting since the seed depends on the database) borrows the settings of the most recently
+updated other list that has a custom order (`findBorrowedLabelSettings`, at most 5 lists, read from the list index
+without extra requests). Nothing is written back to the server.
+
 **Cook Mode swipe (`src/lib/cookSwipe.ts`).** In `CookModeModal`, swiping up on the step goes to the next step and
 swiping down to the previous one. The step text is a gesture-handler `ScrollView` and the Pan runs
 `simultaneousWithExternalGesture` with it, so a long step still scrolls; a swipe only moves on if the text was already

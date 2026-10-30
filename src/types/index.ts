@@ -226,6 +226,8 @@ export interface ShoppingList {
   name: string;
   createdAt?: string;
   updatedAt?: string;
+  // Included by Mealie's list index too (not just the detail), so the order can be read without a second request.
+  labelSettings?: ShoppingListLabelSetting[];
 }
 
 // Per-recipe entry on a shopping list itself -- "this recipe has been added

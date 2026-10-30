@@ -76,6 +76,12 @@ describe('default (A-Z) label order', () => {
     expect(isDefaultLabelOrder(labels, [setting('p', 0), setting('d', 1)])).toBe(true);
   });
 
+  test('a list seeded by a case-sensitive database (Produce before alcohol) is still the default', () => {
+    const ls = [named('p', 'Produce'), named('a', 'alcohol'), named('d', 'dairy')];
+    expect(isDefaultLabelOrder(ls, [setting('p', 0), setting('a', 1), setting('d', 2)])).toBe(true);
+    expect(isDefaultLabelOrder(ls, [setting('d', 0), setting('p', 1), setting('a', 2)])).toBe(false);
+  });
+
   test('judges by position, not by array order', () => {
     expect(isDefaultLabelOrder(labels, [...az].reverse())).toBe(true);
     expect(isDefaultLabelOrder(labels, [...custom].reverse())).toBe(false);
@@ -98,6 +104,29 @@ describe('default (A-Z) label order', () => {
     expect(await run([list('cur', '2026-10-30')], {})).toBeUndefined();
     expect(await findBorrowedLabelSettings('cur', labels, async () => { throw new Error('offline'); }, async () => ({}))).toBeUndefined();
     expect(await run([list('x', '2026-10-29')], {})).toBeUndefined();   // detail fetch throws on undefined
+  });
+
+  test('uses the label settings the list index already carries, without a detail request per list', async () => {
+    const getList = jest.fn();
+    const found = await findBorrowedLabelSettings('cur', labels,
+      async () => ({ items: [{ id: 'az', updatedAt: '2026-10-29', labelSettings: az }, { id: 'mine', updatedAt: '2026-10-28', labelSettings: custom }] }), getList);
+    expect(found).toBe(custom);
+    expect(getList).not.toHaveBeenCalled();
+  });
+
+  test('a list that fails to load is skipped, not the end of the search', async () => {
+    const found = await findBorrowedLabelSettings('cur', labels,
+      async () => ({ items: [list('gone', '2026-10-29'), list('mine', '2026-10-28')] }),
+      async id => { if (id === 'gone') throw new Error('404'); return { labelSettings: custom }; });
+    expect(found).toBe(custom);
+  });
+
+  test('createdAt orders lists that have no updatedAt', async () => {
+    const other = [setting('m', 0), setting('p', 1), setting('d', 2)];
+    const found = await findBorrowedLabelSettings('cur', labels,
+      async () => ({ items: [{ id: 'a', createdAt: '2026-10-01' }, { id: 'b', createdAt: '2026-10-20' }] }),
+      async id => ({ labelSettings: id === 'b' ? custom : other }));
+    expect(found).toBe(custom);
   });
 
   test('only looks at the 5 newest other lists', async () => {

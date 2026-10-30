@@ -103,6 +103,16 @@ describe('section order fallback', () => {
     const { result } = await setup(azSettings, [{ id: 'l' }]);
     await waitFor(() => expect(api.getShoppingLists).toHaveBeenCalled());
     await waitFor(() => expect(result.current.list).not.toBeNull());
+    await act(async () => { await Promise.resolve(); });   // let the borrow lookup settle
     expect(result.current.labelSettings).toBe(azSettings);
+  });
+
+  test('once the open list gets its own custom order the borrowed one is dropped', async () => {
+    const own = [st('m', 0), st('d', 1), st('p', 2)];
+    const { result } = await setup(azSettings);
+    await waitFor(() => expect(result.current.labelSettings).toBe(mine));
+    (api.getShoppingList as jest.Mock).mockImplementation(async (id: string) => ({ id, name: 'L', listItems: [], labelSettings: own }));
+    await act(async () => { await result.current.refresh(); });
+    await waitFor(() => expect(result.current.labelSettings).toBe(own));
   });
 });

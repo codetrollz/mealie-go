@@ -48,7 +48,14 @@ export function orderLabels(labels: ShoppingLabel[], settings?: ShoppingListLabe
     .map(x => x.label);
 }
 
-const byName = (a: string, b: string) => (a.toLowerCase() < b.toLowerCase() ? -1 : a.toLowerCase() > b.toLowerCase() ? 1 : 0);
+// Mealie seeds the A-Z order in the database, so which comparison produced it depends on the
+// database (SQLite sorts by code point, so "Produce" comes before "alcohol"; others ignore case or
+// use locale rules). A list counts as default if it is sorted under any of them.
+const SORTED_BY: ((a: string, b: string) => boolean)[] = [
+  (a, b) => a <= b,
+  (a, b) => a.toLowerCase() <= b.toLowerCase(),
+  (a, b) => a.localeCompare(b) <= 0,
+];
 
 /**
  * True when the saved section order is just A-Z by label name, which is what Mealie seeds every new
@@ -63,16 +70,19 @@ export function isDefaultLabelOrder(labels: ShoppingLabel[], settings?: Shopping
     .map(s => name.get(s.labelId) ?? s.label?.name)
     .filter((n): n is string => !!n);
   if (named.length < 3) return true;
-  return named.every((n, i) => i === 0 || byName(named[i - 1], n) <= 0);
+  return SORTED_BY.some(sorted => named.every((n, i) => i === 0 || sorted(named[i - 1], n)));
 }
 
-type ListRef = { id: string; updatedAt?: string; createdAt?: string };
+type ListRef = { id: string; updatedAt?: string; createdAt?: string; labelSettings?: ShoppingListLabelSetting[] };
 
 /**
- * For a list still in the default A-Z order: the label settings of the user's most recently
- * updated other list that has a custom order (at most `limit` lists are looked at), or undefined.
- * Labels are shared across lists, so those positions apply to this list's labels directly.
- * Any failure just means no fallback.
+ * For a list still in the default A-Z order: the label settings of the most recently updated other
+ * list that has a custom order (at most `limit` lists are looked at), or undefined. Mealie only bumps
+ * a list's updatedAt when the list itself changes, so this is the newest touched list with a custom
+ * order, not strictly the one reordered last. Labels are shared across lists, so those positions
+ * apply to this list's labels directly. The list index already carries each list's label settings;
+ * the detail request is only a fallback for servers that leave them out. A list that fails to load
+ * is skipped, and any other failure just means no fallback.
  */
 export async function findBorrowedLabelSettings(
   currentId: string,
@@ -88,8 +98,12 @@ export async function findBorrowedLabelSettings(
       .sort((a, b) => (when(a) < when(b) ? 1 : when(a) > when(b) ? -1 : 0))
       .slice(0, limit);
     for (const other of others) {
-      const settings = (await getList(other.id)).labelSettings;
-      if (settings?.length && !isDefaultLabelOrder(labels, settings)) return settings;
+      try {
+        const settings = other.labelSettings ?? (await getList(other.id)).labelSettings;
+        if (settings?.length && !isDefaultLabelOrder(labels, settings)) return settings;
+      } catch {
+        // skip a list that fails to load
+      }
     }
   } catch {
     // no fallback
