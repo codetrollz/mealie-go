@@ -27,3 +27,9 @@ test('a mostly vertical gesture (scrolling) never changes the tab', () => {
 test('an unknown active tab does nothing', () => {
   expect(swipeTarget(TABS, 'bogus' as never, -120, 0)).toBeNull();
 });
+
+test('in a right-to-left layout the directions are mirrored', () => {
+  expect(swipeTarget(TABS, 'ingredients', 120, 0, true)).toBe('steps');
+  expect(swipeTarget(TABS, 'steps', -120, 0, true)).toBe('ingredients');
+  expect(swipeTarget(TABS, 'ingredients', -120, 0, true)).toBeNull();
+});

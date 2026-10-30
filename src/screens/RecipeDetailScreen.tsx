@@ -18,6 +18,7 @@ import { promptSaveOrShare } from '../lib/saveFile';
 import type { ViewableImage } from '../components/ImageViewerModal';
 import CookModeModal from '../components/CookModeModal';
 import { displayCookTime, formatTimeText } from '../lib/timeEstimate';
+import { GestureDetector } from 'react-native-gesture-handler';
 import { useTabSwipe } from '../lib/tabSwipe';
 import {
   convertToMetric, convertInstructionTemperatures, scaleFreeformIngredientText,
@@ -127,7 +128,7 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>('ingredients');
-  const tabSwipe = useTabSwipe(TAB_ORDER, activeTab, setActiveTab);
+  const tabSwipe = useTabSwipe(TAB_ORDER, activeTab, setActiveTab, 'recipe-tab-swipe');
   const {
     imageUploading, attachmentUploading, imgError, setImgError,
     handlePickImage, handleAddAttachment,
@@ -623,7 +624,8 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
           )}
 
           {/* Swiping sideways anywhere on the tabs or their content moves between them. */}
-          <View testID="recipe-tab-area" style={styles.tabArea} {...tabSwipe}>
+          <GestureDetector gesture={tabSwipe}>
+          <View testID="recipe-tab-area" style={styles.tabArea}>
           <View style={styles.tabs}>
             {TABS.map(tab => (
               <TouchableOpacity
@@ -768,6 +770,7 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
             </View>
           )}
           </View>
+          </GestureDetector>
 
           <View style={styles.assetsSection}>
             <View style={styles.assetsSectionHeader}>
@@ -1032,7 +1035,7 @@ const useStyles = makeStyles((colors) => StyleSheet.create({
   },
   scalerBtnText: { fontSize: 18, color: colors.textInverse, lineHeight: 22 },
   scalerValue: { fontSize: typography.size.lg, fontWeight: typography.weight.bold, color: colors.textPrimary, minWidth: 24, textAlign: 'center' },
-  tabArea: { minHeight: 280 },
+  tabArea: { minHeight: 200 },
   tabs: {
     flexDirection: 'row', backgroundColor: colors.surface,
     borderRadius: radius.md, padding: 4, borderWidth: 1, borderColor: colors.border,

@@ -1,6 +1,7 @@
 import 'react-native-url-polyfill/auto';
 import { useEffect, useState } from 'react';
 import { SystemBars } from 'react-native-edge-to-edge';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import { FavoritesProvider } from './src/context/FavoritesContext';
@@ -42,15 +43,17 @@ export default function App() {
   if (!i18nReady || savedTheme === null) return null;
 
   return (
-    <ThemeProvider initialPreference={savedTheme.preference} initialAccent={savedTheme.accent}>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <FavoritesProvider>
-            <ThemedSystemBars />
-            <RootNavigator />
-          </FavoritesProvider>
-        </AuthProvider>
-      </SafeAreaProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider initialPreference={savedTheme.preference} initialAccent={savedTheme.accent}>
+        <SafeAreaProvider>
+          <AuthProvider>
+            <FavoritesProvider>
+              <ThemedSystemBars />
+              <RootNavigator />
+            </FavoritesProvider>
+          </AuthProvider>
+        </SafeAreaProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

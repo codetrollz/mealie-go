@@ -1,5 +1,7 @@
 import React from 'react';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
+import { State } from 'react-native-gesture-handler';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import RecipeDetailScreen from '../RecipeDetailScreen';
 import { renderScreen } from '../../testing/render';
@@ -57,10 +59,16 @@ test('a failing wake lock never breaks the recipe screen', async () => {
   expect(await screen.findByText(recipeDetail.name)).toBeTruthy();
 });
 
-const swipe = async (fromX: number, toX: number, dy = 0) => {
-  const area = await screen.findByTestId('recipe-tab-area');
-  await fireEvent(area, 'touchStart', { nativeEvent: { pageX: fromX, pageY: 400, touches: [{}] } });
-  await fireEvent(area, 'touchEnd', { nativeEvent: { pageX: toX, pageY: 400 + dy, touches: [] } });
+// A completed horizontal pan on the tab area, as the gesture handler reports it.
+const swipe = async (translationX: number, translationY = 0) => {
+  await screen.findByTestId('recipe-tab-area');
+  await act(async () => {
+    fireGestureHandler(getByGestureTestId('recipe-tab-swipe'), [
+      { state: State.BEGAN, translationX: 0, translationY: 0 },
+      { state: State.ACTIVE, translationX: translationX / 2, translationY: translationY / 2 },
+      { state: State.END, translationX, translationY },
+    ]);
+  });
 };
 
 test('swiping left moves from Ingredients to Steps and swiping right comes back', async () => {
@@ -68,22 +76,37 @@ test('swiping left moves from Ingredients to Steps and swiping right comes back'
   expect(await screen.findByText('1 lb ground beef')).toBeTruthy();
   expect(screen.queryByText(/shape into four oval patties/)).toBeNull();
 
-  await swipe(300, 100);
+  await swipe(-200);
   expect(await screen.findByText(/shape into four oval patties/)).toBeTruthy();
   expect(screen.queryByText('1 lb ground beef')).toBeNull();
 
-  await swipe(100, 300);
+  await swipe(200);
   expect(await screen.findByText('1 lb ground beef')).toBeTruthy();
   expect(screen.queryByText(/shape into four oval patties/)).toBeNull();
 });
 
-test('swiping right on the first tab, or scrolling down, does not change the tab', async () => {
+test('swiping right on the first tab, a short drag, or a mostly vertical one does not change the tab', async () => {
   await renderScreen(<RecipeDetailScreen navigation={nav} route={route} />);
   expect(await screen.findByText('1 lb ground beef')).toBeTruthy();
-  await swipe(100, 300);          // right on the first tab: nowhere to go
-  await swipe(300, 280, 250);     // mostly vertical drag
+  await swipe(200);          // right on the first tab: nowhere to go
+  await swipe(-40);          // too short
+  await swipe(-80, 250);     // mostly vertical
   expect(screen.getByText('1 lb ground beef')).toBeTruthy();
   expect(screen.queryByText(/shape into four oval patties/)).toBeNull();
+});
+
+test('swiping all the way across stops at the last tab', async () => {
+  await renderScreen(<RecipeDetailScreen navigation={nav} route={route} />);
+  expect(await screen.findByText('1 lb ground beef')).toBeTruthy();
+  await swipe(-200);   // steps
+  await swipe(-200);   // notes
+  expect(await screen.findByText('Serve over mashed potatoes.')).toBeTruthy();
+  await swipe(-200);   // comments
+  expect(await screen.findByText('No comments yet — be the first!')).toBeTruthy();
+  await swipe(-200);   // already on the last tab: stays
+  expect(screen.getByText('No comments yet — be the first!')).toBeTruthy();
+  await swipe(200);    // back to notes
+  expect(await screen.findByText('Serve over mashed potatoes.')).toBeTruthy();
 });
 
 test('tapping a tab still works', async () => {
@@ -92,4 +115,3 @@ test('tapping a tab still works', async () => {
   await fireEvent.press(screen.getByText('Steps'));
   expect(await screen.findByText(/shape into four oval patties/)).toBeTruthy();
 });
-
