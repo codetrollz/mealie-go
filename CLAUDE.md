@@ -402,6 +402,12 @@ Public link format for recipients (Vue SPA route, not an API route):
 | POST | `/api/households/shopping/lists/{id}/recipe` | **Body is a JSON array**, even for one recipe: `[{ recipeId, recipeIncrementQuantity }]`. Omit `recipeIngredients` and the server pulls each recipe's full ingredient list itself. The original code here sent a bare object instead of an array — would have 422'd the first time it was actually exercised; fixed as `api.addRecipesToShoppingList()`. There's also a deprecated singular `/recipe/{recipe_id}` route; don't use it, the bulk one replaces it. |
 | POST | `/api/households/shopping/lists/{id}/recipe/{recipeId}/delete` | Removes/decrements exactly the ingredients that recipe contributed. Body: `{ recipeDecrementQuantity }` (defaults to 1 server-side; the app always sends 1). `api.removeRecipeFromShoppingList()`. **Not** the same shape as the deprecated singular *add* route above — this one has a `/delete` suffix and is the real, non-deprecated removal endpoint. |
 
+**Recipe tabs swipe (`src/lib/tabSwipe.ts`).** Swiping sideways on the tab bar or tab content of `RecipeDetailScreen`
+moves to the next/previous tab (Ingredients, Steps, Notes, Comments; no wrap at the ends). `useTabSwipe` only
+*observes* raw touch events (`onTouchStart/End/Cancel`) and never claims the responder, so the page's vertical scroll
+and every tap on the content behave as before. A swipe must be at least 60px and at least 1.8x more horizontal than
+vertical, so scrolling never flips a tab; a second finger cancels it.
+
 **Shopping labels come from `GET /api/groups/labels`, not `/api/households/shopping/labels`.** The household
 route does not exist in Mealie 3.x: the server answers it with its web page (HTTP 200, HTML), `json()` throws, and
 `useShoppingListDetail` swallows that, so the list silently never grouped by label (Produce, Meat, Dairy...).
