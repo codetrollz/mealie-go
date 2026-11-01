@@ -299,6 +299,8 @@
     "stepTitlePlaceholder": "Título da etapa (opcional)",
     "stepBodyPlaceholder": "Descreva esta etapa...",
     "addStepButton": "Adicionar etapa",
+    "moveStepUp": "Mover o passo {{number}} para cima",
+    "moveStepDown": "Mover o passo {{number}} para baixo",
     "tagsLabel": "TAGS",
     "categoriesLabel": "CATEGORIAS",
     "notesLabel": "NOTAS",

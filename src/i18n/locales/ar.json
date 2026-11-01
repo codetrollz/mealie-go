@@ -292,6 +292,8 @@
     "stepTitlePlaceholder": "عنوان الخطوة (اختياري)",
     "stepBodyPlaceholder": "صف هذه الخطوة...",
     "addStepButton": "إضافة خطوة",
+    "moveStepUp": "نقل الخطوة {{number}} للأعلى",
+    "moveStepDown": "نقل الخطوة {{number}} للأسفل",
     "tagsLabel": "الوسوم",
     "categoriesLabel": "الفئات",
     "notesLabel": "الملاحظات",

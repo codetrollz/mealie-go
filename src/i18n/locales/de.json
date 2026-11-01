@@ -299,6 +299,8 @@
     "stepTitlePlaceholder": "Schritttitel (optional)",
     "stepBodyPlaceholder": "Beschreibe diesen Schritt...",
     "addStepButton": "Schritt hinzufügen",
+    "moveStepUp": "Schritt {{number}} nach oben",
+    "moveStepDown": "Schritt {{number}} nach unten",
     "tagsLabel": "TAGS",
     "categoriesLabel": "KATEGORIEN",
     "notesLabel": "NOTIZEN",

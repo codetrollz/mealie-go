@@ -299,6 +299,8 @@
     "stepTitlePlaceholder": "ধাপের শিরোনাম (ঐচ্ছিক)",
     "stepBodyPlaceholder": "এই ধাপটি বর্ণনা করুন...",
     "addStepButton": "ধাপ যোগ করুন",
+    "moveStepUp": "ধাপ {{number}} উপরে সরান",
+    "moveStepDown": "ধাপ {{number}} নিচে সরান",
     "tagsLabel": "ট্যাগ",
     "categoriesLabel": "বিভাগ",
     "notesLabel": "নোট",

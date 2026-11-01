@@ -299,6 +299,8 @@
     "stepTitlePlaceholder": "चरण शीर्षक (वैकल्पिक)",
     "stepBodyPlaceholder": "इस चरण का वर्णन करें...",
     "addStepButton": "चरण जोड़ें",
+    "moveStepUp": "चरण {{number}} को ऊपर ले जाएँ",
+    "moveStepDown": "चरण {{number}} को नीचे ले जाएँ",
     "tagsLabel": "टैग",
     "categoriesLabel": "श्रेणियाँ",
     "notesLabel": "नोट्स",

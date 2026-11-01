@@ -313,6 +313,8 @@
     "stepTitlePlaceholder": "Название шага (необязательно)",
     "stepBodyPlaceholder": "Опишите этот шаг...",
     "addStepButton": "Добавить шаг",
+    "moveStepUp": "Переместить шаг {{number}} вверх",
+    "moveStepDown": "Переместить шаг {{number}} вниз",
     "tagsLabel": "ТЕГИ",
     "categoriesLabel": "КАТЕГОРИИ",
     "notesLabel": "ЗАМЕТКИ",

@@ -299,6 +299,8 @@
     "stepTitlePlaceholder": "مرحلے کا عنوان (اختیاری)",
     "stepBodyPlaceholder": "اس مرحلے کی وضاحت کریں...",
     "addStepButton": "مرحلہ شامل کریں",
+    "moveStepUp": "مرحلہ {{number}} اوپر لے جائیں",
+    "moveStepDown": "مرحلہ {{number}} نیچے لے جائیں",
     "tagsLabel": "ٹیگز",
     "categoriesLabel": "زمرے",
     "notesLabel": "نوٹس",

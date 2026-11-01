@@ -260,6 +260,8 @@
     "stepTitlePlaceholder": "Step title (optional)",
     "stepBodyPlaceholder": "Describe this step...",
     "addStepButton": "Add Step",
+    "moveStepUp": "Move step {{number}} up",
+    "moveStepDown": "Move step {{number}} down",
     "tagsLabel": "TAGS",
     "categoriesLabel": "CATEGORIES",
     "notesLabel": "NOTES",

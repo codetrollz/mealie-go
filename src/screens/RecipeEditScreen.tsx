@@ -11,6 +11,7 @@ import { useRecipeMedia } from '../hooks/useRecipeMedia';
 import IngredientParseReviewModal, { formatIngredientPreview } from '../components/IngredientParseReviewModal';
 import { api, recipeAssetUrl, recipeImageSource } from '../lib/mealieApi';
 import { formatTimeText } from '../lib/timeEstimate';
+import { moveItem } from '../lib/reorder';
 import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { Recipe, RecipeIngredient, RecipeTag, RecipeCategory } from '../types';
 import type { RecipesStackParams } from '../navigation/RootNavigator';
@@ -418,6 +419,24 @@ export default function RecipeEditScreen({ navigation, route }: Props) {
                 placeholderTextColor={colors.textDisabled}
               />
               <TouchableOpacity
+                style={[styles.removeBtn, idx === 0 && styles.moveBtnOff]}
+                onPress={() => setSteps(prev => moveItem(prev, idx, idx - 1))}
+                disabled={idx === 0}
+                accessibilityLabel={t('recipeEdit.moveStepUp', { number: idx + 1 })}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              >
+                <Text style={styles.removeBtnText}>▲</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.removeBtn, idx === steps.length - 1 && styles.moveBtnOff]}
+                onPress={() => setSteps(prev => moveItem(prev, idx, idx + 1))}
+                disabled={idx === steps.length - 1}
+                accessibilityLabel={t('recipeEdit.moveStepDown', { number: idx + 1 })}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              >
+                <Text style={styles.removeBtnText}>▼</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={styles.removeBtn}
                 onPress={() => setSteps(prev => prev.filter(s => s.key !== step.key))}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -781,6 +800,9 @@ const useStyles = makeStyles((colors) => StyleSheet.create({
   removeBtnText: {
     fontSize: 14,
     color: colors.textDisabled,
+  },
+  moveBtnOff: {
+    opacity: 0.25,
   },
   sectionToggleText: {
     fontSize: 13,

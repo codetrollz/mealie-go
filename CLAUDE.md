@@ -428,6 +428,10 @@ longer exists in an unlabelled section instead of dropping it.
 (`src/lib/shoppingGroups.ts`) sorts the labels by it before `groupByLabel`; a label with no setting goes after the
 ones that have one. Without this the sections followed `/api/groups/labels` order (Produce was last).
 
+**Reordering steps in the editor.** `RecipeEditScreen` steps have ▲/▼ buttons (`moveItem` in `src/lib/reorder.ts`);
+no drag-and-drop library is installed (it would need reanimated). Steps keep their `key` when they move, so typed text
+travels with them; `handleSave` already writes `recipeInstructions` in array order.
+
 **Mealie has no global section order.** `create_one_list` seeds every new list's `labelSettings` A-Z by name (the
 index and detail both return them). So a list still in that order (`isDefaultLabelOrder`, which accepts code-point,
 case-insensitive or locale sorting since the seed depends on the database) borrows the settings of the most recently

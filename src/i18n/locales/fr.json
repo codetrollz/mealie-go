@@ -299,6 +299,8 @@
     "stepTitlePlaceholder": "Titre de l'étape (facultatif)",
     "stepBodyPlaceholder": "Décrivez cette étape...",
     "addStepButton": "Ajouter une étape",
+    "moveStepUp": "Monter l'étape {{number}}",
+    "moveStepDown": "Descendre l'étape {{number}}",
     "tagsLabel": "ÉTIQUETTES",
     "categoriesLabel": "CATÉGORIES",
     "notesLabel": "NOTES",

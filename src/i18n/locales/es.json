@@ -299,6 +299,8 @@
     "stepTitlePlaceholder": "Título del paso (opcional)",
     "stepBodyPlaceholder": "Describe este paso...",
     "addStepButton": "Añadir paso",
+    "moveStepUp": "Subir el paso {{number}}",
+    "moveStepDown": "Bajar el paso {{number}}",
     "tagsLabel": "ETIQUETAS",
     "categoriesLabel": "CATEGORÍAS",
     "notesLabel": "NOTAS",
