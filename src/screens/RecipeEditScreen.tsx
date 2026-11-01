@@ -33,6 +33,13 @@ type Props = {
 // shown but not yet typed.
 type IngDraft = { key: string; text: string; parsed?: RecipeIngredient; title?: string };
 type StepDraft = { key: string; title: string; text: string };
+
+// Looks the step up by key at update time, not by the index captured at render, so two quick taps
+// can't act on a stale position.
+const moveStep = (steps: StepDraft[], key: string, by: -1 | 1) => {
+  const from = steps.findIndex(s => s.key === key);
+  return moveItem(steps, from, from + by);
+};
 type NoteDraft = { key: string; title: string; text: string };
 
 function uid() {
@@ -420,7 +427,7 @@ export default function RecipeEditScreen({ navigation, route }: Props) {
               />
               <TouchableOpacity
                 style={[styles.removeBtn, idx === 0 && styles.moveBtnOff]}
-                onPress={() => setSteps(prev => moveItem(prev, idx, idx - 1))}
+                onPress={() => setSteps(prev => moveStep(prev, step.key, -1))}
                 disabled={idx === 0}
                 accessibilityLabel={t('recipeEdit.moveStepUp', { number: idx + 1 })}
                 hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
@@ -429,7 +436,7 @@ export default function RecipeEditScreen({ navigation, route }: Props) {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.removeBtn, idx === steps.length - 1 && styles.moveBtnOff]}
-                onPress={() => setSteps(prev => moveItem(prev, idx, idx + 1))}
+                onPress={() => setSteps(prev => moveStep(prev, step.key, 1))}
                 disabled={idx === steps.length - 1}
                 accessibilityLabel={t('recipeEdit.moveStepDown', { number: idx + 1 })}
                 hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
@@ -439,7 +446,7 @@ export default function RecipeEditScreen({ navigation, route }: Props) {
               <TouchableOpacity
                 style={styles.removeBtn}
                 onPress={() => setSteps(prev => prev.filter(s => s.key !== step.key))}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
               >
                 <Text style={styles.removeBtnText}>✕</Text>
               </TouchableOpacity>

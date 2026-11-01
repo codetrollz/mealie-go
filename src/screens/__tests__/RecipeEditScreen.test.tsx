@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert } from 'react-native';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import RecipeEditScreen from '../RecipeEditScreen';
 import { renderScreen } from '../../testing/render';
 import { api } from '../../lib/mealieApi';
@@ -74,10 +74,29 @@ test('the first step cannot move up and the last cannot move down', async () => 
   expect(screen.getByLabelText('Move step 3 down').props.accessibilityState?.disabled).toBe(true);
 });
 
-test('step numbers follow the new order', async () => {
+test('moving a step down and then the step now below it up swaps back, so positions follow the order', async () => {
   await open();
+  const original = stepsOnScreen();
   await fireEvent.press(screen.getByLabelText('Move step 1 down'));
-  // The step that was Gravy (3rd) still reads 3rd; the others swapped places.
-  expect(screen.getAllByPlaceholderText('Step title (optional)').map(i => i.props.value)).toEqual(['', '', 'Gravy']);
-  expect(screen.getByLabelText('Move step 3 down')).toBeTruthy();
+  await fireEvent.press(screen.getByLabelText('Move step 2 up'));
+  expect(stepsOnScreen()).toEqual(original);
+});
+
+test('two quick taps before a re-render move the step twice, not the wrong row', async () => {
+  await open();
+  const [one, two, three] = stepsOnScreen();
+  const down = screen.getByLabelText('Move step 1 down');
+  await act(async () => { fireEvent.press(down); fireEvent.press(down); });
+  expect(stepsOnScreen()).toEqual([two, three, one]);
+});
+
+test('an empty step sitting between moved steps is dropped on save, the others keep their new order', async () => {
+  await open();
+  const [one, two, three] = recipeDetail.recipeInstructions.map(s => s.text);
+  await fireEvent.press(screen.getByLabelText('Move step 3 up'));   // one, three, two
+  await fireEvent.press(screen.getByText('+ Add Step'));              // one, three, two, (empty)
+  await fireEvent.press(screen.getByLabelText('Move step 4 up'));   // one, three, (empty), two
+  await fireEvent.press(screen.getByText('Save'));
+  await waitFor(() => expect(api.updateRecipe).toHaveBeenCalled());
+  expect((api.updateRecipe as jest.Mock).mock.calls[0][1].recipeInstructions.map((s: any) => s.text)).toEqual([one, three, two]);
 });
