@@ -164,6 +164,33 @@ describe('Share Recipe screen: text and PDF', () => {
     expect(api.createShareToken).not.toHaveBeenCalled();
   });
 
+  test('the stats line carries the cook time and the servings', async () => {
+    await fireEvent.press(await openShare());
+    expect((Share.share as jest.Mock).mock.calls[0][0].message).toMatch(/Cook: .*· Serves: 4/);
+  });
+
+  test('a recipe without a servings count does not claim "Serves: 1"', async () => {
+    (api.getRecipe as jest.Mock).mockResolvedValue({ ...recipeDetail, recipeServings: 0, recipeYieldQuantity: 0 });
+    await fireEvent.press(await openShare());
+    expect((Share.share as jest.Mock).mock.calls[0][0].message).not.toContain('Serves');
+  });
+
+  test('the header PDF button still goes through the save/share flow with the generated file, untouched', async () => {
+    await renderScreen(<RecipeDetailScreen navigation={nav} route={route} />);
+    expect(await screen.findByText('1 lb ground beef')).toBeTruthy();
+    await fireEvent.press(screen.getByText('PDF'));
+    await waitFor(() => expect(Sharing.shareAsync).toHaveBeenCalledWith('file:///cache/Print/abc-123.pdf', { mimeType: 'application/pdf' }));
+    expect(FileSystem.copyAsync).not.toHaveBeenCalled();
+  });
+
+  test('tapping Share as PDF twice quickly starts only one export', async () => {
+    const button = await openShare().then(() => screen.getByText('Share as PDF'));
+    // Both taps land before React re-renders the disabled button, as with a fast double tap.
+    await act(async () => { fireEvent.press(button); fireEvent.press(button); });
+    await waitFor(() => expect(Sharing.shareAsync).toHaveBeenCalled());
+    expect(Print.printToFileAsync).toHaveBeenCalledTimes(1);
+  });
+
   test('Share as text follows the servings scaler', async () => {
     await renderScreen(<RecipeDetailScreen navigation={nav} route={route} />);
     expect(await screen.findByText('1 lb ground beef')).toBeTruthy();

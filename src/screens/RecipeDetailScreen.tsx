@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, Image, Linking, Modal, ScrollView, Share,
   StyleSheet, Text, TextInput, TouchableOpacity, View,
@@ -164,6 +164,7 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
   const [addingToListId, setAddingToListId] = useState<string | null>(null);
 
   const [showCookMode, setShowCookMode] = useState(false);
+  const exportInFlight = useRef(false);
 
   const scale = servings / (originalServings || 1);
 
@@ -388,7 +389,10 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
   // Builds the PDF and returns its file URI. `finish` decides what happens to it (save/share prompt
   // for the PDF button, straight to the share sheet from the Share screen).
   const runPdfExport = async (finish: (uri: string) => void | Promise<void>) => {
-    if (!recipe) return;
+    // A second tap before the spinner state re-renders must not start another export (Android refuses
+    // a second share while one is open and would show a bogus "Export failed").
+    if (!recipe || exportInFlight.current) return;
+    exportInFlight.current = true;
     setExportingPdf(true);
     try {
       let imageTag = '';
@@ -416,6 +420,7 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
     } catch (e) {
       Alert.alert(t('recipeDetail.exportFailedTitle'), e instanceof Error ? e.message : t('recipeDetail.genericExportError'));
     } finally {
+      exportInFlight.current = false;
       setExportingPdf(false);
     }
   };
@@ -432,6 +437,7 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
   const handleSharePdf = () => runPdfExport(async uri => {
     let shareUri = uri;
     try {
+      if (!FileSystem.cacheDirectory) throw new Error('no cache directory');
       const named = `${FileSystem.cacheDirectory}${recipe!.slug}.pdf`;
       await FileSystem.deleteAsync(named, { idempotent: true });
       await FileSystem.copyAsync({ from: uri, to: named });
@@ -450,7 +456,8 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
       cookTimeDisplay ? t('time.cookLabel', { time: cookTimeDisplay }) : '',
       totalTimeDisplay ? t('recipeDetail.pdfTotalLabel', { time: totalTimeDisplay }) : '',
       recipe.recipeYield ? t('recipeDetail.pdfYieldLabel', { value: recipe.recipeYield }) : '',
-      servings ? t('recipeDetail.pdfServesLabel', { count: formatQty(servings) }) : '',
+      // `servings` is never 0 (it falls back to 1), so only say "Serves" when the recipe really has a count.
+      recipe.recipeServings || recipe.recipeYieldQuantity ? t('recipeDetail.pdfServesLabel', { count: formatQty(servings) }) : '',
     ];
     const message = buildRecipeShareText({
       name: recipe.name,
