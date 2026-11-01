@@ -381,6 +381,13 @@ Public link format for recipients (Vue SPA route, not an API route):
 `{serverUrl}/g/{groupSlug}/shared/r/{tokenId}` — `groupSlug` comes from `UserProfile.groupSlug`
 (`GET /api/users/self` field `group_slug`).
 
+**Sharing the recipe itself (not only a link).** The Share Recipe screen has "Share as text" and "Share as PDF" above
+the link list. Text is `buildRecipeShareText` (`src/lib/recipeShareText.ts`) over the on-screen scaled ingredients
+and steps (`ingredientDisplayLines`, `cookModeSteps`), sent with `Share.share`; it never creates a public link. PDF
+reuses the export builder (`runPdfExport`), copies the file to `<cache>/<slug>.pdf` so recipients see a real name
+(`printToFileAsync` names files with a random id), then `shareFile`. Sending the photo together with text would need
+`react-native-share`; receiving shares from other apps would need an intent filter plus a share-intent library.
+
 ### Meal Plans
 | Method | Path | Notes |
 |---|---|---|

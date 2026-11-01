@@ -14,7 +14,9 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useRecipeMedia } from '../hooks/useRecipeMedia';
 import { api, isImageFileName, recipeAssetUrl, recipeImageSource } from '../lib/mealieApi';
 import ImageViewerModal from '../components/ImageViewerModal';
-import { promptSaveOrShare } from '../lib/saveFile';
+import { promptSaveOrShare, shareFile } from '../lib/saveFile';
+import { buildRecipeShareText } from '../lib/recipeShareText';
+import * as FileSystem from 'expo-file-system/legacy';
 import type { ViewableImage } from '../components/ImageViewerModal';
 import CookModeModal from '../components/CookModeModal';
 import { displayCookTime, formatTimeText } from '../lib/timeEstimate';
@@ -383,7 +385,9 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
     }
   };
 
-  const handleExportPdf = async () => {
+  // Builds the PDF and returns its file URI. `finish` decides what happens to it (save/share prompt
+  // for the PDF button, straight to the share sheet from the Share screen).
+  const runPdfExport = async (finish: (uri: string) => void | Promise<void>) => {
     if (!recipe) return;
     setExportingPdf(true);
     try {
@@ -408,15 +412,62 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
 
       const html = buildRecipePdfHtml(recipe, imageTag);
       const { uri } = await Print.printToFileAsync({ html });
-      // Offers a real save-to-a-folder as well as sharing — a share sheet isn't
-      // a download, and "export" that can only hand the file to another app is
-      // a dead end if what you wanted was the PDF on your device.
-      promptSaveOrShare(uri, `${recipe.slug}.pdf`, 'application/pdf');
+      await finish(uri);
     } catch (e) {
       Alert.alert(t('recipeDetail.exportFailedTitle'), e instanceof Error ? e.message : t('recipeDetail.genericExportError'));
     } finally {
       setExportingPdf(false);
     }
+  };
+
+  // Offers a real save-to-a-folder as well as sharing — a share sheet isn't
+  // a download, and "export" that can only hand the file to another app is
+  // a dead end if what you wanted was the PDF on your device.
+  const handleExportPdf = () => runPdfExport(uri => {
+    promptSaveOrShare(uri, `${recipe!.slug}.pdf`, 'application/pdf');
+  });
+
+  // printToFileAsync names its file with a random id, which is what the recipient would see in
+  // WhatsApp or an email, so hand over a copy called after the recipe. Falls back to the original.
+  const handleSharePdf = () => runPdfExport(async uri => {
+    let shareUri = uri;
+    try {
+      const named = `${FileSystem.cacheDirectory}${recipe!.slug}.pdf`;
+      await FileSystem.deleteAsync(named, { idempotent: true });
+      await FileSystem.copyAsync({ from: uri, to: named });
+      shareUri = named;
+    } catch {
+      // keep the generated file
+    }
+    await shareFile(shareUri, 'application/pdf');
+  });
+
+  // The recipe as it is on screen (servings scaling, metric toggle), as plain text.
+  const handleShareText = async () => {
+    if (!recipe) return;
+    const meta = [
+      prepTimeDisplay ? t('time.prepLabel', { time: prepTimeDisplay }) : '',
+      cookTimeDisplay ? t('time.cookLabel', { time: cookTimeDisplay }) : '',
+      totalTimeDisplay ? t('recipeDetail.pdfTotalLabel', { time: totalTimeDisplay }) : '',
+      recipe.recipeYield ? t('recipeDetail.pdfYieldLabel', { value: recipe.recipeYield }) : '',
+      servings ? t('recipeDetail.pdfServesLabel', { count: formatQty(servings) }) : '',
+    ];
+    const message = buildRecipeShareText({
+      name: recipe.name,
+      description: recipe.description,
+      meta,
+      ingredients: ingredientDisplayLines.map((text, i) => ({ text, title: recipe.recipeIngredient[i]?.title ?? undefined })),
+      steps: cookModeSteps,
+      notes: recipe.notes,
+      labels: {
+        ingredients: t('recipeDetail.tabIngredients'),
+        instructions: t('recipeDetail.tabSteps'),
+        notes: t('recipeDetail.tabNotes'),
+      },
+    });
+    try {
+      await Share.share({ title: recipe.name, message });
+    } catch {}
   };
 
   const openListPicker = async () => {
@@ -818,6 +869,19 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
             <View style={{ width: 50 }} />
           </View>
 
+          <View style={shareStyles.sendRow}>
+            <TouchableOpacity style={shareStyles.sendBtn} onPress={handleShareText}>
+              <Text style={shareStyles.sendBtnText}>{t('recipeDetail.shareAsText')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={shareStyles.sendBtn} onPress={handleSharePdf} disabled={exportingPdf}>
+              {exportingPdf
+                ? <ActivityIndicator color={colors.primary} size="small" />
+                : <Text style={shareStyles.sendBtnText}>{t('recipeDetail.shareAsPdf')}</Text>
+              }
+            </TouchableOpacity>
+          </View>
+          <Text style={shareStyles.sectionLabel}>{t('recipeDetail.shareLinksHeading')}</Text>
+
           <TouchableOpacity
             style={shareStyles.newLinkBtn}
             onPress={handleCreateShareToken}
@@ -1114,6 +1178,16 @@ const useShareStyles = makeStyles((colors) => StyleSheet.create({
   },
   close: { fontSize: typography.size.md, color: colors.textSecondary, width: 50 },
   title: { fontSize: typography.size.xl, fontWeight: typography.weight.bold, color: colors.textPrimary },
+  sendRow: { flexDirection: 'row', gap: spacing.sm, margin: spacing.md, marginBottom: 0 },
+  sendBtn: {
+    flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: radius.md,
+    paddingVertical: spacing.md, alignItems: 'center', justifyContent: 'center',
+  },
+  sendBtnText: { color: colors.primary, fontWeight: typography.weight.semibold, fontSize: typography.size.md },
+  sectionLabel: {
+    marginTop: spacing.lg, marginHorizontal: spacing.md, fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold, color: colors.textDisabled, letterSpacing: 0.8,
+  },
   newLinkBtn: {
     margin: spacing.md, backgroundColor: colors.primary, borderRadius: radius.md,
     paddingVertical: spacing.md, alignItems: 'center',
