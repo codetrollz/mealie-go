@@ -40,14 +40,15 @@ export function normalizeItemChanges(response: unknown, kind: 'created' | 'updat
 }
 
 /**
- * The list's items after applying `changes`: deleted ones go, updated ones replace the item with the
+ * The list's items after applying `changes`: deleted ones go, updated ones are laid over the item with the
  * same id (Mealie merges a repeated entry into the existing line and reports it as updated), created ones
- * are appended unless already present.
+ * are appended unless already present. An update is merged, not swapped in, so a reply that leaves out
+ * fields the full list read has (food, label, recipe references) doesn't strip them from the row.
  */
 export function applyItemChanges(list: ShoppingListItem[], changes: ShoppingItemChanges): ShoppingListItem[] {
   const deleted = new Set(changes.deletedItems.map(i => i.id));
   const updated = new Map(changes.updatedItems.map(i => [i.id, i]));
-  const next = list.filter(i => !deleted.has(i.id)).map(i => updated.get(i.id) ?? i);
+  const next = list.filter(i => !deleted.has(i.id)).map(i => (updated.has(i.id) ? { ...i, ...updated.get(i.id)! } : i));
   const known = new Set(next.map(i => i.id));
   for (const created of changes.createdItems) {
     if (!known.has(created.id)) {

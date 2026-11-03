@@ -165,9 +165,16 @@ describe('adding and checking off items', () => {
   test('a failed add or toggle changes nothing and the error reaches the caller', async () => {
     const { result } = await load([plain('a') as any]);
     (api.addShoppingItem as jest.Mock).mockRejectedValue(new Error('500: boom'));
-    await expect(act(async () => { await result.current.addItem('x'); })).rejects.toThrow('boom');
+    await act(async () => { await expect(result.current.addItem('x')).rejects.toThrow('boom'); });
     (api.updateShoppingItem as jest.Mock).mockRejectedValue(new Error('500: boom'));
-    await expect(act(async () => { await result.current.toggleItem(result.current.list!.listItems[0]); })).rejects.toThrow('boom');
+    await act(async () => { await expect(result.current.toggleItem(result.current.list!.listItems[0])).rejects.toThrow('boom'); });
     expect(result.current.list!.listItems.map(i => [i.id, i.checked])).toEqual([['a', false]]);
+  });
+
+  test('checking off an item that the server merged into another line shows the merged result', async () => {
+    const { result } = await load([plain('a', { quantity: 1, display: '1 a' }) as any, plain('b', { quantity: 1, display: '1 a' }) as any]);
+    (api.updateShoppingItem as jest.Mock).mockResolvedValue({ ...none, deletedItems: [plain('b')], updatedItems: [plain('a', { quantity: 2, display: '2 a' })] });
+    await act(async () => { await result.current.toggleItem(result.current.list!.listItems[1]); });
+    expect(result.current.list!.listItems.map(i => [i.id, i.display])).toEqual([['a', '2 a']]);
   });
 });

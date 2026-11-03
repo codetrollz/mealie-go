@@ -277,7 +277,7 @@ export default function ShoppingListDetailScreen({ navigation, route }: Props) {
     return (
       <TouchableOpacity
         style={styles.item}
-        onPress={() => toggleItem(item)}
+        onPress={() => toggleItem(item).catch(e => Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e)))}
         onLongPress={() => handleDelete(item)}
         activeOpacity={0.7}
       >

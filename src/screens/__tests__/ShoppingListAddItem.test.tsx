@@ -1,6 +1,7 @@
 import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import ShoppingListDetailScreen from '../ShoppingListDetailScreen';
 import { renderScreen } from '../../testing/render';
 
@@ -93,4 +94,17 @@ test('an item the server sends with an empty display still shows its note', asyn
   server.items.push({ id: 'odd', shoppingListId: 'l', note: 'batteries', display: '', quantity: 1, checked: false, position: 1, isFood: false });
   await renderScreen(<ShoppingListDetailScreen navigation={nav} route={route} />);
   expect(await screen.findByText('batteries')).toBeTruthy();
+});
+
+test('a failed check-off is shown to the user and the row stays as it was', async () => {
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  await renderScreen(<ShoppingListDetailScreen navigation={nav} route={route} />);
+  await screen.findByText('1 flour');
+  const real = (global as any).fetch;
+  (global as any).fetch = jest.fn(async (url: string, init: any = {}) =>
+    (init.method === 'PUT' ? { ok: false, status: 500, statusText: 'x', json: async () => ({}), text: async () => 'server exploded' } : real(url, init)));
+  await fireEvent.press(screen.getByText('1 flour'));
+  await waitFor(() => expect(alert).toHaveBeenCalledWith('Error', '500: server exploded'));
+  expect(screen.queryByText('✓')).toBeNull();
+  expect(screen.getByText('1 flour')).toBeTruthy();
 });

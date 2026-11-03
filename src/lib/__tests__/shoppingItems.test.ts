@@ -77,6 +77,24 @@ describe('applyItemChanges', () => {
     expect(list.map(i => i.id)).toEqual(['a']);
   });
 
+  test('an update that leaves out fields keeps them on the row (merged, not swapped in)', () => {
+    const rich = item('a', { note: 'chicken', display: '1 lb chicken', food: { id: 'f', name: 'chicken' } as any,
+      label: { id: 'meat', name: 'Meat' }, labelId: 'meat', recipeReferences: [{ id: 'r1' } as any], checked: false });
+    const next = applyItemChanges([rich], { ...none, updatedItems: [{ id: 'a', checked: true, display: '1 lb chicken' } as any] });
+    expect(next[0]).toMatchObject({ checked: true, food: { name: 'chicken' }, label: { name: 'Meat' }, labelId: 'meat' });
+    expect(next[0].recipeReferences).toHaveLength(1);
+  });
+
+  test('checking an item off that Mealie merged into a duplicate: the checked item is deleted and the other is updated', () => {
+    const list = [item('a', { display: '1 milk', quantity: 1 }), item('b', { display: '1 milk', quantity: 1, checked: true })];
+    const next = applyItemChanges(list, { ...none, deletedItems: [item('b')], updatedItems: [item('a', { display: '2 milk', quantity: 2 })] });
+    expect(next.map(i => [i.id, i.display])).toEqual([['a', '2 milk']]);
+  });
+
+  test('updates for items that are not on the list are ignored, not added', () => {
+    expect(applyItemChanges([item('a')], { ...none, updatedItems: [item('zzz')] }).map(i => i.id)).toEqual(['a']);
+  });
+
   test('no changes returns an equal list', () => {
     const list = [item('a'), item('b')];
     expect(applyItemChanges(list, none)).toEqual(list);
