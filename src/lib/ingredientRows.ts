@@ -8,17 +8,18 @@ export interface IngredientRow {
   parsed?: RecipeIngredient;
   /** Section heading shown above this row (e.g. "Sauce"). */
   title?: string;
-  /** What steps use to point at this ingredient. */
+  /** What steps use to point at this ingredient. Kept equal to `parsed.referenceId` when the row is parsed (on save, a parsed row writes its own, a plain row writes this one). */
   referenceId?: string;
 }
 
 /**
  * The editor's rows after the "parse ingredients" review. The review hands back one ingredient per line it
  * was given, but it lets the user reorder and remove them, so a result is matched to the row it came from by the
- * line's original text (not by position). A matched row keeps its section title and its reference id (so steps
- * that point at it still do; the parser would otherwise give it a fresh id). A result with no matching row, for
- * instance because its text was edited in the review, becomes a plain new row. Blank rows are not sent to the
- * review and are not carried over.
+ * line's original text (the line exactly as it was sent; not by position). A matched row keeps its section title
+ * and its reference id (so steps that point at it still do; the parser would otherwise give it a fresh id). Editing
+ * a result's food, unit or note in the review does not change that text, so it still matches. A result with no
+ * matching row (no original text) becomes a plain new row. Blank rows, including one that only has a section
+ * title, are not sent to the review and are not carried over.
  */
 export function applyParsedIngredients(
   rows: IngredientRow[],

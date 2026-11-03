@@ -75,7 +75,9 @@ export default function IngredientParseReviewModal({ visible, ingredientLines, o
           )
           .map(({ i }) => i);
         setParsed(result);
-        setResolved(result.map(p => p.ingredient));
+        // originalText is the line exactly as it was sent (`input`), whatever the parser echoed, so the editor can
+        // match each result back to the row it came from.
+        setResolved(result.map(p => ({ ...p.ingredient, originalText: p.input })));
         setReviewQueue(needsReview);
         setPhase(needsReview.length > 0 ? 'review' : 'reorder');
       })

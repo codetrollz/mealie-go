@@ -25,9 +25,10 @@ test('results the user reordered or removed in the review still find their own r
   expect(out.map(r => [r.text, r.title, r.referenceId])).toEqual([['PREVIEW c', 'C', 'rc'], ['PREVIEW a', 'A', 'ra']]);
 });
 
-test('a result whose text no longer matches (edited in the review) is a plain new row with the parser\'s id', () => {
+test('a result whose text matches no row is a plain new row with the parser\'s id', () => {
   const out = applyParsedIngredients([row('2 cups flour', { referenceId: 'ref-flour', title: 'Dough' })], [result('2 cups sifted flour')], makeKey, preview);
   expect(out[0]).toMatchObject({ title: undefined, referenceId: 'fresh-2 cups sifted flour' });
+  expect(out[0].parsed?.referenceId).toBe('fresh-2 cups sifted flour');
 });
 
 test('identical lines are matched in order, each row used once', () => {
@@ -53,6 +54,7 @@ test('blank rows are not carried over, keys are fresh and unique, and the parser
   const rows = [row('   ', { title: 'Orphan heading' }), row('x', { referenceId: 'rx' })];
   const out = applyParsedIngredients(rows, [result('x', { quantity: 3, note: 'diced' }), result('y')], makeKey, preview);
   expect(out).toHaveLength(2);
+  expect(out.map(r => r.title)).toEqual([undefined, undefined]);                  // the heading on the blank row is not carried over
   expect(new Set(out.map(r => r.key)).size).toBe(2);
   expect(out[0].parsed).toMatchObject({ quantity: 3, note: 'diced', referenceId: 'rx' });
 });

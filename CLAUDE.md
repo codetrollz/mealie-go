@@ -436,9 +436,11 @@ with a step when it is reordered. Plain-text ingredient rows and notes keep thei
 already do, inside `parsed`). A step link to an ingredient whose id no longer exists is accepted by Mealie 3.29 (checked
 on a scratch recipe), it just links to nothing. The "parse ingredients" review used to rebuild every row from scratch, which
 also dropped the section headings; `applyParsedIngredients` (`src/lib/ingredientRows.ts`) now matches each result to the row it
-came from by the line's original text (the review lets the user reorder and remove, so not by position; Mealie's parser
-echoes `originalText`) and keeps that row's section title and reference id. A result whose text was edited in the review, and
-blank rows, become plain new rows or are dropped, as before.
+came from by the line's original text (the review lets the user reorder and remove, so not by position). The review sets each
+result's `originalText` to the parser's `input`, the line exactly as sent, so this does not depend on how the server echoes it
+(Mealie 3.29 happens to echo it unchanged). A matched row keeps its section title and reference id; editing food/unit/note in
+the review doesn't change the text, so it still matches. Blank rows, including one that only carries a section title, are not
+sent to the review and are dropped by it.
 
 **Reordering steps in the editor.** `RecipeEditScreen` steps have ▲/▼ buttons (`moveItem` in `src/lib/reorder.ts`);
 no drag-and-drop library is installed (it would need reanimated). Steps keep their `key` when they move, so typed text

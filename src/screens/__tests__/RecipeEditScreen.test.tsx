@@ -225,7 +225,7 @@ test('removing the middle note leaves the other two with their own reference ids
     { referenceId: a, title: 'A', text: 'one' }, { referenceId: b, title: 'B', text: 'two' }, { referenceId: c, title: 'C', text: 'three' }] });
   await renderScreen(<RecipeEditScreen navigation={nav} route={route} />);
   await screen.findAllByPlaceholderText('Describe this step...');
-  await fireEvent.press(screen.getByTestId('remove-note-n1'));
+  await fireEvent.press(screen.getAllByTestId(/^remove-note-/)[1]);
   const saved = await saveAndRead();
   expect(saved.notes.map((n: any) => [n.referenceId, n.title])).toEqual([[a, 'A'], [c, 'C']]);
 });
@@ -238,9 +238,10 @@ test('a step whose text is cleared is dropped together with its duration (a step
 });
 
 describe('parse ingredients review', () => {
+  // The parser's `originalText` is deliberately NOT the sent line here (a server may normalise it); `input` is.
   const parsedLine = (text: string, qty: number, unit: string, food: string) => ({
     input: text, confidence: { average: 0.99 },
-    ingredient: { originalText: text, referenceId: `fresh-${food}`, quantity: qty, unit: { id: `u-${unit}`, name: unit }, food: { id: `f-${food}`, name: food }, display: text },
+    ingredient: { originalText: text.toLowerCase().replace('cups', 'cup'), referenceId: `fresh-${food}`, quantity: qty, unit: { id: `u-${unit}`, name: unit }, food: { id: `f-${food}`, name: food }, display: text },
   });
 
   test('running the review keeps each ingredient\'s section title and the id steps use to point at it', async () => {
@@ -258,6 +259,10 @@ describe('parse ingredients review', () => {
       [R1, 'Dough', 2, 'flour'], [R2, undefined, 1, 'milk'],
     ]);
     expect(saved.recipeIngredient[0].referenceId).not.toBe('fresh-flour');           // the parser's fresh id did not replace it
-    expect(saved.recipeInstructions[0].ingredientReferences).toEqual([{ referenceId: R1 }, { referenceId: R2 }]);   // so the step links still resolve
+    // every link a step has still points at an ingredient that is in the saved recipe
+    const ids = new Set(saved.recipeIngredient.map((i: any) => i.referenceId));
+    const links = saved.recipeInstructions.flatMap((st: any) => (st.ingredientReferences ?? []).map((r: any) => r.referenceId));
+    expect(links).toEqual([R1, R2]);
+    expect(links.every((id: string) => ids.has(id))).toBe(true);
   });
 });

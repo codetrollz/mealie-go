@@ -403,7 +403,6 @@ export default function RecipeEditScreen({ navigation, route }: Props) {
               <TouchableOpacity
                 style={styles.removeBtn}
                 onPress={() => setIngredients(prev => prev.filter(i => i.key !== ing.key))}
-                testID={`remove-ingredient-${idx}`}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Text style={styles.removeBtnText}>✕</Text>
