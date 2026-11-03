@@ -136,13 +136,25 @@ export interface RecipeIngredient {
   display?: string;
 }
 
+// A reference to an ingredient or note by its `referenceId` (Mealie 3.x steps can link to them).
+export interface RecipeReference {
+  referenceId: string;
+}
+
 export interface RecipeInstruction {
   id?: string;
   title?: string;
+  summary?: string;
   text: string;
+  ingredientReferences?: RecipeReference[];
+  noteReferences?: RecipeReference[];
+  // Mealie 3.30+: how long this step takes, in seconds (null/absent = not set).
+  durationSeconds?: number | null;
 }
 
 export interface RecipeNote {
+  // Mealie 3.x gives each note one; steps can point at it (noteReferences).
+  referenceId?: string;
   title: string;
   text: string;
 }

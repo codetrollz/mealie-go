@@ -428,6 +428,15 @@ longer exists in an unlabelled section instead of dropping it.
 (`src/lib/shoppingGroups.ts`) sorts the labels by it before `groupByLabel`; a label with no setting goes after the
 ones that have one. Without this the sections followed `/api/groups/labels` order (Produce was last).
 
+**What the recipe editor writes back.** Only a step's title and text are editable, but Mealie 3.x steps carry more
+(`id`, `summary`, `ingredientReferences`, `noteReferences`, and from 3.30 `durationSeconds`), and ingredients and notes
+carry a `referenceId` that steps point at. `StepDraft.base` keeps the step as the server sent it and `handleSave` writes
+`{...base, title, text}`, so those fields (and anything a newer Mealie adds) are no longer dropped on save; they travel
+with a step when it is reordered. Plain-text ingredient rows and notes keep their `referenceId` too (structured rows
+already do, inside `parsed`). A step link to an ingredient whose id no longer exists is accepted by Mealie 3.29 (checked
+on a scratch recipe), it just links to nothing. Not covered: ingredient rows replaced by the "parse ingredients" review
+get new reference ids, so step links to those rows end up pointing at nothing.
+
 **Reordering steps in the editor.** `RecipeEditScreen` steps have ▲/▼ buttons (`moveItem` in `src/lib/reorder.ts`);
 no drag-and-drop library is installed (it would need reanimated). Steps keep their `key` when they move, so typed text
 travels with them; `handleSave` already writes `recipeInstructions` in array order.

@@ -13,7 +13,7 @@ import { api, recipeAssetUrl, recipeImageSource } from '../lib/mealieApi';
 import { formatTimeText } from '../lib/timeEstimate';
 import { moveItem } from '../lib/reorder';
 import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
-import type { Recipe, RecipeIngredient, RecipeTag, RecipeCategory } from '../types';
+import type { Recipe, RecipeIngredient, RecipeInstruction, RecipeTag, RecipeCategory } from '../types';
 import type { RecipesStackParams } from '../navigation/RootNavigator';
 
 type Props = {
@@ -31,8 +31,13 @@ type Props = {
 // "Sauce"), rendered directly above that row -- not a separate divider
 // type. `undefined` means no title editor shown for this row; `''` means
 // shown but not yet typed.
-type IngDraft = { key: string; text: string; parsed?: RecipeIngredient; title?: string };
-type StepDraft = { key: string; title: string; text: string };
+// `referenceId` is what steps use to point at an ingredient; it is kept so those links survive a save
+// (parsed rows carry it inside `parsed`).
+type IngDraft = { key: string; text: string; parsed?: RecipeIngredient; title?: string; referenceId?: string };
+// `base` is the step as the server sent it. Only title and text are editable here, so everything else on it
+// (id, summary, ingredient/note links, duration, anything a newer Mealie adds) is written back unchanged
+// rather than being dropped on save. It travels with the step when steps are reordered.
+type StepDraft = { key: string; title: string; text: string; base?: RecipeInstruction };
 
 // Looks the step up by key at update time, not by the index captured at render, so two quick taps
 // can't act on a stale position.
@@ -40,7 +45,7 @@ const moveStep = (steps: StepDraft[], key: string, by: -1 | 1) => {
   const from = steps.findIndex(s => s.key === key);
   return moveItem(steps, from, from + by);
 };
-type NoteDraft = { key: string; title: string; text: string };
+type NoteDraft = { key: string; title: string; text: string; referenceId?: string };
 
 function uid() {
   return `${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -125,17 +130,20 @@ export default function RecipeEditScreen({ navigation, route }: Props) {
             text: isStructured ? formatIngredientPreview(ing) : (ing.display ?? ing.originalText ?? ing.note ?? ''),
             parsed: isStructured ? ing : undefined,
             title: ing.title ?? undefined,
+            referenceId: ing.referenceId,
           };
         }));
         setSteps(r.recipeInstructions.map((step, i) => ({
           key: `s${i}`,
           title: step.title ?? '',
           text: step.text,
+          base: step,
         })));
         setNotes(r.notes.map((note, i) => ({
           key: `n${i}`,
           title: note.title,
           text: note.text,
+          referenceId: note.referenceId,
         })));
         const [tagData, catData] = await Promise.all([
           api.getTags().catch(() => ({ items: [] })),
@@ -178,15 +186,15 @@ export default function RecipeEditScreen({ navigation, route }: Props) {
         recipeIngredient: ingredients
           .filter(i => i.parsed || i.text.trim() || i.title?.trim())
           .map(i => ({
-            ...(i.parsed ?? { note: i.text.trim(), originalText: i.text.trim(), disableAmount: true }),
+            ...(i.parsed ?? { note: i.text.trim(), originalText: i.text.trim(), disableAmount: true, referenceId: i.referenceId }),
             title: i.title?.trim() || undefined,
           })),
         recipeInstructions: steps
           .filter(s => s.text.trim())
-          .map(s => ({ title: s.title.trim() || undefined, text: s.text.trim() })),
+          .map(s => ({ ...s.base, title: s.title.trim() || undefined, text: s.text.trim() })),
         notes: notes
           .filter(n => n.title.trim() || n.text.trim())
-          .map(n => ({ title: n.title.trim(), text: n.text.trim() })),
+          .map(n => ({ ...(n.referenceId ? { referenceId: n.referenceId } : {}), title: n.title.trim(), text: n.text.trim() })),
       });
       // Mealie regenerates the slug when the name changes, so the
       // RecipeDetail screen underneath still holds the old, now-404 slug.

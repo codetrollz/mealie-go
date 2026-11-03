@@ -100,3 +100,105 @@ test('an empty step sitting between moved steps is dropped on save, the others k
   await waitFor(() => expect(api.updateRecipe).toHaveBeenCalled());
   expect((api.updateRecipe as jest.Mock).mock.calls[0][1].recipeInstructions.map((s: any) => s.text)).toEqual([one, three, two]);
 });
+
+
+// ---- hidden fields on steps, ingredients and notes must survive a save ----
+const R1 = '11111111-1111-4111-8111-111111111111';
+const R2 = '22222222-2222-4222-8222-222222222222';
+const N1 = '33333333-3333-4333-8333-333333333333';
+const rich = {
+  ...recipeDetail,
+  recipeIngredient: [
+    { referenceId: R1, note: '1 cup flour', originalText: '1 cup flour', display: '1 cup flour' },                 // plain text row
+    { referenceId: R2, quantity: 2, unit: { id: 'u', name: 'cup' }, food: { id: 'f', name: 'milk' }, display: '2 cups milk' },  // structured row
+  ],
+  recipeInstructions: [
+    { id: 'st1', title: 'Mix', summary: 'the batter', text: 'Mix the flour and milk.', ingredientReferences: [{ referenceId: R1 }, { referenceId: R2 }],
+      noteReferences: [{ referenceId: N1 }], durationSeconds: 600 },
+    { id: 'st2', title: '', text: 'Bake it.', ingredientReferences: [], durationSeconds: 1800, someFutureField: { nested: true } },
+    { id: 'st3', title: 'Rest', text: 'Let it rest.', durationSeconds: null },
+  ],
+  notes: [{ referenceId: N1, title: 'Tip', text: 'Use cold milk.' }],
+};
+
+const saveAndRead = async () => {
+  await fireEvent.press(screen.getByText('Save'));
+  await waitFor(() => expect(api.updateRecipe).toHaveBeenCalled());
+  return (api.updateRecipe as jest.Mock).mock.calls[0][1];
+};
+const openRich = async () => {
+  (api.getRecipe as jest.Mock).mockResolvedValue(rich);
+  await renderScreen(<RecipeEditScreen navigation={nav} route={route} />);
+  await screen.findAllByPlaceholderText('Describe this step...');
+};
+
+test('saving without changes writes every step back exactly as the server had it (id, summary, links, duration, unknown fields)', async () => {
+  await openRich();
+  const saved = await saveAndRead();
+  expect(saved.recipeInstructions).toEqual([
+    { id: 'st1', title: 'Mix', summary: 'the batter', text: 'Mix the flour and milk.', ingredientReferences: [{ referenceId: R1 }, { referenceId: R2 }],
+      noteReferences: [{ referenceId: N1 }], durationSeconds: 600 },
+    { id: 'st2', text: 'Bake it.', ingredientReferences: [], durationSeconds: 1800, someFutureField: { nested: true } },   // empty title is omitted
+    { id: 'st3', title: 'Rest', text: 'Let it rest.', durationSeconds: null },
+  ]);
+});
+
+test('editing a step changes its text and keeps its duration and links', async () => {
+  await openRich();
+  await fireEvent.changeText(screen.getAllByPlaceholderText('Describe this step...')[0], '  Whisk the flour and milk.  ');
+  const saved = await saveAndRead();
+  expect(saved.recipeInstructions[0]).toMatchObject({ id: 'st1', text: 'Whisk the flour and milk.', durationSeconds: 600, summary: 'the batter',
+    ingredientReferences: [{ referenceId: R1 }, { referenceId: R2 }], noteReferences: [{ referenceId: N1 }] });
+});
+
+test('moving a step moves its duration and links with it', async () => {
+  await openRich();
+  await fireEvent.press(screen.getByLabelText('Move step 1 down'));
+  const saved = await saveAndRead();
+  expect(saved.recipeInstructions.map((s: any) => [s.id, s.text, s.durationSeconds])).toEqual([
+    ['st2', 'Bake it.', 1800], ['st1', 'Mix the flour and milk.', 600], ['st3', 'Let it rest.', null],
+  ]);
+  expect(saved.recipeInstructions[1].ingredientReferences).toEqual([{ referenceId: R1 }, { referenceId: R2 }]);
+});
+
+test('a new step carries no hidden fields, and a removed step is gone', async () => {
+  await openRich();
+  await fireEvent.press(screen.getByText('+ Add Step'));
+  const bodies = screen.getAllByPlaceholderText('Describe this step...');
+  await fireEvent.changeText(bodies[3], 'Serve warm.');
+  await fireEvent.press(screen.getAllByText('✕')[2]);               // ✕ buttons run ingredients (2), then steps: this is step 1
+  const saved = await saveAndRead();
+  expect(saved.recipeInstructions.map((s: any) => s.id)).toEqual(['st2', 'st3', undefined]);
+  expect(saved.recipeInstructions[2]).toEqual({ text: 'Serve warm.' });
+});
+
+test('clearing a step title drops the title but keeps the rest of the step', async () => {
+  await openRich();
+  await fireEvent.changeText(screen.getAllByPlaceholderText('Step title (optional)')[0], '');
+  const saved = await saveAndRead();
+  expect(saved.recipeInstructions[0].title).toBeUndefined();
+  expect(saved.recipeInstructions[0]).toMatchObject({ id: 'st1', durationSeconds: 600 });
+});
+
+test('ingredients keep the id steps use to point at them, whether plain text or structured, and notes keep theirs', async () => {
+  await openRich();
+  const saved = await saveAndRead();
+  expect(saved.recipeIngredient.map((i: any) => i.referenceId)).toEqual([R1, R2]);
+  expect(saved.recipeIngredient[0]).toMatchObject({ note: '1 cup flour', disableAmount: true });
+  expect(saved.recipeIngredient[1]).toMatchObject({ quantity: 2, food: { name: 'milk' } });
+  expect(saved.notes).toEqual([{ referenceId: N1, title: 'Tip', text: 'Use cold milk.' }]);
+});
+
+test('an ingredient or note added in the editor has no reference id', async () => {
+  await openRich();
+  await fireEvent.press(screen.getByText('+ Add Ingredient'));
+  // the structured row shows a preview instead of a text box, so the new row is the 2nd text box
+  await fireEvent.changeText(screen.getAllByPlaceholderText('e.g. 2 cups all-purpose flour')[1], '3 eggs');
+  await fireEvent.press(screen.getByText('+ Add Note'));
+  await fireEvent.changeText(screen.getAllByPlaceholderText('Note title')[1], 'Another');
+  await fireEvent.changeText(screen.getAllByPlaceholderText('Note content...')[1], 'Body of another note');
+  const saved = await saveAndRead();
+  expect(saved.recipeIngredient[2]).toMatchObject({ note: '3 eggs' });
+  expect(saved.recipeIngredient[2].referenceId).toBeUndefined();
+  expect(saved.notes[1].referenceId).toBeUndefined();
+});
