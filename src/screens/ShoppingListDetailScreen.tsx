@@ -12,6 +12,7 @@ import { api } from '../lib/mealieApi';
 import { localIsoDate } from '../lib/localDate';
 import { findPossibleMatchIds } from '../lib/shoppingMatch';
 import { groupByLabel, orderLabels } from '../lib/shoppingGroups';
+import { itemLabel } from '../lib/shoppingItems';
 import EmptyState from '../components/EmptyState';
 import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { RecipeSummary, ShoppingListItem, ShoppingListRecipeRef } from '../types';
@@ -86,7 +87,7 @@ export default function ShoppingListDetailScreen({ navigation, route }: Props) {
   const handleDelete = (item: ShoppingListItem) => {
     Alert.alert(
       t('shopping.removeItemTitle'),
-      t('shopping.removeItemMsg', { name: item.display ?? item.note ?? item.food?.name }),
+      t('shopping.removeItemMsg', { name: itemLabel(item) }),
       [
         { text: t('common.cancel'), style: 'cancel' },
         { text: t('shopping.remove'), style: 'destructive', onPress: () => deleteItem(item.id) },
@@ -271,7 +272,7 @@ export default function ShoppingListDetailScreen({ navigation, route }: Props) {
   );
 
   const renderItem = (item: ShoppingListItem) => {
-    const label = item.display ?? item.note ?? item.food?.name ?? t('shopping.itemFallback');
+    const label = itemLabel(item) ?? t('shopping.itemFallback');
     const flagged = possibleMatchIds.has(item.id);
     return (
       <TouchableOpacity

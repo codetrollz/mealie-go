@@ -9,6 +9,7 @@ import type {
   CreateFoodInput, CreateUnitInput, ParsedIngredient, RecipeComment, ShoppingLabel,
   UserRatingSummary, RecipeShareToken, RecipeSuggestion,
 } from '../types';
+import { normalizeItemChanges, type ShoppingItemChanges } from './shoppingItems';
 
 const SERVER_URL_KEY = 'mealie_go.server_url';
 const TOKEN_KEY = 'mealie_go.auth_token';
@@ -643,8 +644,10 @@ export const api = {
   deleteShoppingList: (id: string) =>
     request<void>(`/api/households/shopping/lists/${id}`, { method: 'DELETE' }),
 
-  addShoppingItem: (shoppingListId: string, note: string, quantity?: number, labelId?: string) =>
-    request<ShoppingListItem>('/api/households/shopping/items', {
+  // Mealie 3.x answers both of these with a wrapper of created/updated/deleted items rather than the
+  // item itself; normalizeItemChanges reads that (or an older server's plain item) into one shape.
+  addShoppingItem: async (shoppingListId: string, note: string, quantity?: number, labelId?: string): Promise<ShoppingItemChanges> =>
+    normalizeItemChanges(await request<unknown>('/api/households/shopping/items', {
       method: 'POST',
       body: JSON.stringify({
         shoppingListId,
@@ -654,13 +657,13 @@ export const api = {
         ...(quantity ? { quantity } : {}),
         ...(labelId ? { labelId } : {}),
       }),
-    }),
+    }), 'created'),
 
-  updateShoppingItem: (itemId: string, data: Partial<ShoppingListItem>) =>
-    request<ShoppingListItem>(`/api/households/shopping/items/${itemId}`, {
+  updateShoppingItem: async (itemId: string, data: Partial<ShoppingListItem>): Promise<ShoppingItemChanges> =>
+    normalizeItemChanges(await request<unknown>(`/api/households/shopping/items/${itemId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
-    }),
+    }), 'updated'),
 
   deleteShoppingItem: (itemId: string) =>
     request<void>(`/api/households/shopping/items/${itemId}`, { method: 'DELETE' }),

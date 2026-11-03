@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/mealieApi';
 import { planMerge } from '../lib/shoppingMerge';
 import { findBorrowedLabelSettings, isDefaultLabelOrder } from '../lib/shoppingGroups';
+import { applyItemChanges } from '../lib/shoppingItems';
 import type { ShoppingLabel, ShoppingList, ShoppingListItem, ShoppingListLabelSetting, ShoppingListWithItems } from '../types';
 
 export function useShoppingLists() {
@@ -78,17 +79,20 @@ export function useShoppingListDetail(listId: string) {
   }, [listId, labels, hasDefaultOrder]);
   const labelSettings = hasDefaultOrder ? borrowedSettings ?? list?.labelSettings : list?.labelSettings;
 
+  // Mealie answers with what it changed (created / updated / deleted items), not with the item. Adding
+  // text that is already on the list makes Mealie merge it into that line and report it as updated, so
+  // apply all three kinds rather than assuming one new item.
   const addItem = useCallback(async (note: string, quantity?: number, labelId?: string) => {
-    const item = await api.addShoppingItem(listId, note, quantity, labelId);
-    setList(prev => prev ? { ...prev, listItems: [...prev.listItems, item] } : prev);
+    const changes = await api.addShoppingItem(listId, note, quantity, labelId);
+    setList(prev => prev ? { ...prev, listItems: applyItemChanges(prev.listItems, changes) } : prev);
   }, [listId]);
 
   const toggleItem = useCallback(async (item: ShoppingListItem) => {
-    const updated = await api.updateShoppingItem(item.id, { ...item, checked: !item.checked });
-    setList(prev => prev
-      ? { ...prev, listItems: prev.listItems.map(i => i.id === item.id ? updated : i) }
-      : prev
-    );
+    const changes = await api.updateShoppingItem(item.id, { ...item, checked: !item.checked });
+    // If the reply doesn't say the item was updated, show the change we asked for.
+    const reported = changes.updatedItems.some(i => i.id === item.id);
+    const effective = reported ? changes : { ...changes, updatedItems: [...changes.updatedItems, { ...item, checked: !item.checked }] };
+    setList(prev => prev ? { ...prev, listItems: applyItemChanges(prev.listItems, effective) } : prev);
   }, []);
 
   const deleteItem = useCallback(async (itemId: string) => {

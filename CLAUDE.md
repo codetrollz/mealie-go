@@ -403,8 +403,8 @@ reuses the export builder (`runPdfExport`), copies the file to `<cache>/<slug>.p
 | GET | `/api/households/shopping/lists/{id}` | Returns list + `listItems` array |
 | POST | `/api/households/shopping/lists` | Body: `{ name }` |
 | DELETE | `/api/households/shopping/lists/{id}` | |
-| POST | `/api/households/shopping/items` | Body: `{ shoppingListId, note, isFood, checked }` |
-| PUT | `/api/households/shopping/items/{id}` | Full item body to update |
+| POST | `/api/households/shopping/items` | Body: `{ shoppingListId, note, isFood, checked }`. **Replies with `{ createdItems, updatedItems, deletedItems }` (Mealie 3.x), not the item.** Text already on the list is merged into that line and comes back in `updatedItems`. |
+| PUT | `/api/households/shopping/items/{id}` | Full item body to update. Same wrapper reply. |
 | DELETE | `/api/households/shopping/items/{id}` | |
 | POST | `/api/households/shopping/lists/{id}/recipe` | **Body is a JSON array**, even for one recipe: `[{ recipeId, recipeIncrementQuantity }]`. Omit `recipeIngredients` and the server pulls each recipe's full ingredient list itself. The original code here sent a bare object instead of an array — would have 422'd the first time it was actually exercised; fixed as `api.addRecipesToShoppingList()`. There's also a deprecated singular `/recipe/{recipe_id}` route; don't use it, the bulk one replaces it. |
 | POST | `/api/households/shopping/lists/{id}/recipe/{recipeId}/delete` | Removes/decrements exactly the ingredients that recipe contributed. Body: `{ recipeDecrementQuantity }` (defaults to 1 server-side; the app always sends 1). `api.removeRecipeFromShoppingList()`. **Not** the same shape as the deprecated singular *add* route above — this one has a `/delete` suffix and is the real, non-deprecated removal endpoint. |
@@ -431,6 +431,14 @@ ones that have one. Without this the sections followed `/api/groups/labels` orde
 **Reordering steps in the editor.** `RecipeEditScreen` steps have ▲/▼ buttons (`moveItem` in `src/lib/reorder.ts`);
 no drag-and-drop library is installed (it would need reanimated). Steps keep their `key` when they move, so typed text
 travels with them; `handleSave` already writes `recipeInstructions` in array order.
+
+**Adding or checking off an item (reply shape).** Mealie 3.x answers `POST`/`PUT` on shopping items with
+`{ createdItems, updatedItems, deletedItems }`, not the item; older servers answered with the item. The app used to put
+that reply straight into the list, so a new row had no text and showed the fallback "Item" (and a checked row broke the
+same way) until the next refresh. `normalizeItemChanges` (`src/lib/shoppingItems.ts`, used by `api.addShoppingItem` and
+`api.updateShoppingItem`) reads both shapes and `applyItemChanges` applies created/updated/deleted to the list; the row
+label (`itemLabel`) skips an empty `display`. Mealie shows a typed item with a leading quantity ("1 paper towels") because
+it defaults the quantity to 1; sending `quantity: 0` shows just the text.
 
 **Mealie has no global section order.** `create_one_list` seeds every new list's `labelSettings` A-Z by name (the
 index and detail both return them). So a list still in that order (`isDefaultLabelOrder`, which accepts code-point,

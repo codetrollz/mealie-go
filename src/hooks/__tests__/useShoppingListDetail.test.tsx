@@ -5,6 +5,7 @@ import { api } from '../../lib/mealieApi';
 jest.mock('../../lib/mealieApi', () => ({
   api: {
     getShoppingList: jest.fn(), getShoppingLists: jest.fn(), getShoppingLabels: jest.fn(), updateShoppingItem: jest.fn(), deleteShoppingItem: jest.fn(),
+    addShoppingItem: jest.fn(),
   },
 }));
 
@@ -114,5 +115,59 @@ describe('section order fallback', () => {
     (api.getShoppingList as jest.Mock).mockImplementation(async (id: string) => ({ id, name: 'L', listItems: [], labelSettings: own }));
     await act(async () => { await result.current.refresh(); });
     await waitFor(() => expect(result.current.labelSettings).toBe(own));
+  });
+});
+
+
+describe('adding and checking off items', () => {
+  const none = { createdItems: [], updatedItems: [], deletedItems: [] };
+  const plain = (id: string, over = {}) => ({ id, shoppingListId: 'l', checked: false, position: 0, isFood: false, note: id, display: `1 ${id}`, ...over });
+
+  test('an added item appears with its own text', async () => {
+    const { result } = await load([]);
+    (api.addShoppingItem as jest.Mock).mockResolvedValue({ ...none, createdItems: [plain('paper towels')] });
+    await act(async () => { await result.current.addItem('paper towels'); });
+    expect(api.addShoppingItem).toHaveBeenCalledWith('l', 'paper towels', undefined, undefined);
+    expect(result.current.list!.listItems.map(i => i.display)).toEqual(['1 paper towels']);
+  });
+
+  test('text that Mealie merged into an existing line updates that line and adds nothing', async () => {
+    const { result } = await load([plain('flour') as any]);
+    (api.addShoppingItem as jest.Mock).mockResolvedValue({ ...none, updatedItems: [plain('flour', { display: '2 flour', quantity: 2 })] });
+    await act(async () => { await result.current.addItem('flour'); });
+    expect(result.current.list!.listItems.map(i => [i.id, i.display])).toEqual([['flour', '2 flour']]);
+  });
+
+  test('a reply that reports nothing leaves the list as it was (no blank row, no crash)', async () => {
+    const { result } = await load([plain('flour') as any]);
+    (api.addShoppingItem as jest.Mock).mockResolvedValue(none);
+    await act(async () => { await result.current.addItem('anything'); });
+    expect(result.current.list!.listItems.map(i => i.id)).toEqual(['flour']);
+  });
+
+  test('checking an item off uses what the server reports', async () => {
+    const { result } = await load([plain('a') as any, plain('b') as any]);
+    (api.updateShoppingItem as jest.Mock).mockResolvedValue({ ...none, updatedItems: [plain('a', { checked: true, display: '1 a (server)' })] });
+    await act(async () => { await result.current.toggleItem(result.current.list!.listItems[0]); });
+    expect(result.current.list!.listItems.map(i => [i.id, i.checked, i.display])).toEqual([['a', true, '1 a (server)'], ['b', false, '1 b']]);
+    expect(api.updateShoppingItem).toHaveBeenCalledWith('a', expect.objectContaining({ id: 'a', checked: true }));
+  });
+
+  test('if the server does not say the item was updated, the change that was asked for is shown', async () => {
+    const { result } = await load([plain('a') as any]);
+    (api.updateShoppingItem as jest.Mock).mockResolvedValue(none);
+    await act(async () => { await result.current.toggleItem(result.current.list!.listItems[0]); });
+    expect(result.current.list!.listItems[0]).toMatchObject({ id: 'a', checked: true, display: '1 a' });
+    await act(async () => { await result.current.toggleItem(result.current.list!.listItems[0]); });
+    expect(result.current.list!.listItems[0].checked).toBe(false);
+  });
+
+  test('a failed add or toggle changes nothing and the error reaches the caller', async () => {
+    const { result } = await load([plain('a') as any]);
+    (api.addShoppingItem as jest.Mock).mockRejectedValue(new Error('500: boom'));
+    await expect(act(async () => { await result.current.addItem('x'); })).rejects.toThrow('boom');
+    (api.updateShoppingItem as jest.Mock).mockRejectedValue(new Error('500: boom'));
+    await expect(act(async () => { await result.current.toggleItem(result.current.list!.listItems[0]); })).rejects.toThrow('boom');
+    expect(result.current.list!.listItems.map(i => [i.id, i.checked])).toEqual([['a', false]]);
   });
 });
