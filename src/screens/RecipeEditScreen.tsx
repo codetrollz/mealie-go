@@ -12,6 +12,7 @@ import IngredientParseReviewModal, { formatIngredientPreview } from '../componen
 import { api, recipeAssetUrl, recipeImageSource } from '../lib/mealieApi';
 import { formatTimeText } from '../lib/timeEstimate';
 import { moveItem } from '../lib/reorder';
+import { applyParsedIngredients, type IngredientRow } from '../lib/ingredientRows';
 import { radius, spacing, typography, makeStyles, useTheme } from '../theme';
 import type { Recipe, RecipeIngredient, RecipeInstruction, RecipeTag, RecipeCategory } from '../types';
 import type { RecipesStackParams } from '../navigation/RootNavigator';
@@ -33,7 +34,7 @@ type Props = {
 // shown but not yet typed.
 // `referenceId` is what steps use to point at an ingredient; it is kept so those links survive a save
 // (parsed rows carry it inside `parsed`).
-type IngDraft = { key: string; text: string; parsed?: RecipeIngredient; title?: string; referenceId?: string };
+type IngDraft = IngredientRow;
 // `base` is the step as the server sent it. Only title and text are editable here, so everything else on it
 // (id, summary, ingredient/note links, duration, anything a newer Mealie adds) is written back unchanged
 // rather than being dropped on save. It travels with the step when steps are reordered.
@@ -402,6 +403,7 @@ export default function RecipeEditScreen({ navigation, route }: Props) {
               <TouchableOpacity
                 style={styles.removeBtn}
                 onPress={() => setIngredients(prev => prev.filter(i => i.key !== ing.key))}
+                testID={`remove-ingredient-${idx}`}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Text style={styles.removeBtnText}>✕</Text>
@@ -454,6 +456,7 @@ export default function RecipeEditScreen({ navigation, route }: Props) {
               <TouchableOpacity
                 style={styles.removeBtn}
                 onPress={() => setSteps(prev => prev.filter(s => s.key !== step.key))}
+                testID={`remove-step-${idx}`}
                 hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
               >
                 <Text style={styles.removeBtnText}>✕</Text>
@@ -547,6 +550,7 @@ export default function RecipeEditScreen({ navigation, route }: Props) {
               <TouchableOpacity
                 style={styles.removeBtn}
                 onPress={() => setNotes(prev => prev.filter(n => n.key !== note.key))}
+                testID={`remove-note-${note.key}`}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Text style={styles.removeBtnText}>✕</Text>
@@ -606,11 +610,7 @@ export default function RecipeEditScreen({ navigation, route }: Props) {
         ingredientLines={ingredients.map(i => i.text).filter(text => text.trim())}
         onCancel={() => setShowParseModal(false)}
         onComplete={result => {
-          setIngredients(result.map(ing => ({
-            key: uid(),
-            text: formatIngredientPreview(ing),
-            parsed: ing.disableAmount ? undefined : ing,
-          })));
+          setIngredients(prev => applyParsedIngredients(prev, result, uid, formatIngredientPreview));
           setShowParseModal(false);
         }}
       />

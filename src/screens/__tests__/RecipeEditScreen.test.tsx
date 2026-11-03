@@ -14,7 +14,7 @@ jest.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ serverUrl: 'https://mealie.test', token: 't', user: { groupSlug: 'home' } }),
 }));
 jest.mock('../../lib/mealieApi', () => ({
-  api: { getRecipe: jest.fn(), updateRecipe: jest.fn(), getTags: jest.fn(), getCategories: jest.fn() },
+  api: { getRecipe: jest.fn(), updateRecipe: jest.fn(), getTags: jest.fn(), getCategories: jest.fn(), parseIngredients: jest.fn() },
   recipeImageSource: () => undefined,
   recipeAssetUrl: () => '',
   isImageFileName: () => false,
@@ -166,7 +166,7 @@ test('a new step carries no hidden fields, and a removed step is gone', async ()
   await fireEvent.press(screen.getByText('+ Add Step'));
   const bodies = screen.getAllByPlaceholderText('Describe this step...');
   await fireEvent.changeText(bodies[3], 'Serve warm.');
-  await fireEvent.press(screen.getAllByText('✕')[2]);               // ✕ buttons run ingredients (2), then steps: this is step 1
+  await fireEvent.press(screen.getByTestId('remove-step-0'));
   const saved = await saveAndRead();
   expect(saved.recipeInstructions.map((s: any) => s.id)).toEqual(['st2', 'st3', undefined]);
   expect(saved.recipeInstructions[2]).toEqual({ text: 'Serve warm.' });
@@ -201,4 +201,63 @@ test('an ingredient or note added in the editor has no reference id', async () =
   expect(saved.recipeIngredient[2]).toMatchObject({ note: '3 eggs' });
   expect(saved.recipeIngredient[2].referenceId).toBeUndefined();
   expect(saved.notes[1].referenceId).toBeUndefined();
+});
+
+
+test('editing a plain-text ingredient keeps its reference id', async () => {
+  await openRich();
+  await fireEvent.changeText(screen.getByPlaceholderText('e.g. 2 cups all-purpose flour'), '2 cups sifted flour');
+  const saved = await saveAndRead();
+  expect(saved.recipeIngredient[0]).toMatchObject({ note: '2 cups sifted flour', referenceId: R1 });
+});
+
+test('turning a structured ingredient back into text keeps its reference id', async () => {
+  await openRich();
+  await fireEvent.press(screen.getByText('Edit as text'));
+  const saved = await saveAndRead();
+  expect(saved.recipeIngredient[1]).toMatchObject({ disableAmount: true, referenceId: R2 });
+  expect(saved.recipeIngredient[1].quantity).toBeUndefined();
+});
+
+test('removing the middle note leaves the other two with their own reference ids', async () => {
+  const [a, b, c] = ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'];
+  (api.getRecipe as jest.Mock).mockResolvedValue({ ...rich, notes: [
+    { referenceId: a, title: 'A', text: 'one' }, { referenceId: b, title: 'B', text: 'two' }, { referenceId: c, title: 'C', text: 'three' }] });
+  await renderScreen(<RecipeEditScreen navigation={nav} route={route} />);
+  await screen.findAllByPlaceholderText('Describe this step...');
+  await fireEvent.press(screen.getByTestId('remove-note-n1'));
+  const saved = await saveAndRead();
+  expect(saved.notes.map((n: any) => [n.referenceId, n.title])).toEqual([[a, 'A'], [c, 'C']]);
+});
+
+test('a step whose text is cleared is dropped together with its duration (a step needs text)', async () => {
+  await openRich();
+  await fireEvent.changeText(screen.getAllByPlaceholderText('Describe this step...')[1], '   ');
+  const saved = await saveAndRead();
+  expect(saved.recipeInstructions.map((s: any) => s.id)).toEqual(['st1', 'st3']);
+});
+
+describe('parse ingredients review', () => {
+  const parsedLine = (text: string, qty: number, unit: string, food: string) => ({
+    input: text, confidence: { average: 0.99 },
+    ingredient: { originalText: text, referenceId: `fresh-${food}`, quantity: qty, unit: { id: `u-${unit}`, name: unit }, food: { id: `f-${food}`, name: food }, display: text },
+  });
+
+  test('running the review keeps each ingredient\'s section title and the id steps use to point at it', async () => {
+    (api.getRecipe as jest.Mock).mockResolvedValue({ ...rich,
+      recipeIngredient: [
+        { referenceId: R1, title: 'Dough', note: '2 cups flour', originalText: '2 cups flour', display: '2 cups flour' },
+        { referenceId: R2, note: '1 cup milk', originalText: '1 cup milk', display: '1 cup milk' },
+      ] });
+    (api.parseIngredients as jest.Mock).mockResolvedValue([parsedLine('2 cups flour', 2, 'cup', 'flour'), parsedLine('1 cup milk', 1, 'cup', 'milk')]);
+    const autoRoute = { ...route, params: { ...route.params, autoParse: true } };
+    await renderScreen(<RecipeEditScreen navigation={nav} route={autoRoute} />);
+    await fireEvent.press(await screen.findByText('Save 2 Ingredients'));          // the review's own save button
+    const saved = await saveAndRead();
+    expect(saved.recipeIngredient.map((i: any) => [i.referenceId, i.title, i.quantity, i.food?.name])).toEqual([
+      [R1, 'Dough', 2, 'flour'], [R2, undefined, 1, 'milk'],
+    ]);
+    expect(saved.recipeIngredient[0].referenceId).not.toBe('fresh-flour');           // the parser's fresh id did not replace it
+    expect(saved.recipeInstructions[0].ingredientReferences).toEqual([{ referenceId: R1 }, { referenceId: R2 }]);   // so the step links still resolve
+  });
 });

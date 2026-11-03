@@ -434,8 +434,11 @@ carry a `referenceId` that steps point at. `StepDraft.base` keeps the step as th
 `{...base, title, text}`, so those fields (and anything a newer Mealie adds) are no longer dropped on save; they travel
 with a step when it is reordered. Plain-text ingredient rows and notes keep their `referenceId` too (structured rows
 already do, inside `parsed`). A step link to an ingredient whose id no longer exists is accepted by Mealie 3.29 (checked
-on a scratch recipe), it just links to nothing. Not covered: ingredient rows replaced by the "parse ingredients" review
-get new reference ids, so step links to those rows end up pointing at nothing.
+on a scratch recipe), it just links to nothing. The "parse ingredients" review used to rebuild every row from scratch, which
+also dropped the section headings; `applyParsedIngredients` (`src/lib/ingredientRows.ts`) now matches each result to the row it
+came from by the line's original text (the review lets the user reorder and remove, so not by position; Mealie's parser
+echoes `originalText`) and keeps that row's section title and reference id. A result whose text was edited in the review, and
+blank rows, become plain new rows or are dropped, as before.
 
 **Reordering steps in the editor.** `RecipeEditScreen` steps have ▲/▼ buttons (`moveItem` in `src/lib/reorder.ts`);
 no drag-and-drop library is installed (it would need reanimated). Steps keep their `key` when they move, so typed text
