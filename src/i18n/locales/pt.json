@@ -186,7 +186,8 @@
     "wholeWeekTitle": "A semana toda · {{range}}",
     "wholeWeekTap": "Toque para planejar a semana toda",
     "weekRange": "{{from}} – {{to}}",
-    "weekNotSupported": "Este servidor Mealie não suporta entradas para a semana toda (requer a versão 3.30 ou mais recente)."
+    "weekNotSupported": "Este servidor Mealie não suporta entradas para a semana toda (requer a versão 3.30 ou mais recente).",
+    "weekNotSupportedStray": "Este servidor Mealie não suporta entradas para a semana toda (requer a versão 3.30 ou mais recente). A entrada criada na segunda-feira não pôde ser removida; exclua-a."
   },
   "shopping": {
     "title": "Compras",

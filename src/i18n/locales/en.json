@@ -169,7 +169,8 @@
     "wholeWeekTitle": "Whole week · {{range}}",
     "wholeWeekTap": "Tap to plan the whole week",
     "weekRange": "{{from}} – {{to}}",
-    "weekNotSupported": "This Mealie server doesn't support whole-week entries (it needs version 3.30 or newer)."
+    "weekNotSupported": "This Mealie server doesn't support whole-week entries (it needs version 3.30 or newer).",
+    "weekNotSupportedStray": "This Mealie server doesn't support whole-week entries (it needs version 3.30 or newer). The entry it created on Monday could not be removed; please delete it."
   },
   "shopping": {
     "title": "Shopping",

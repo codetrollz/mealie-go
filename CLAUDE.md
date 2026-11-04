@@ -2369,8 +2369,10 @@ Wed-Tue entry) and its + opens the usual add sheet with a meal-type row, saving 
 unchanged (no `endDate`). The display rule is overlap (a week entry shows in every week it touches); the shopping-list rule is
 start date (`lib/mealPlanWeek.ts` `startsInRange`, used by `addFromMealPlanWeeks`), so one recipe is never added for two
 consecutive weeks. `lib/serverFeatures.ts` `supportsWeekEntries(version)` hides the + only when the version parses and is below
-3.30 (unknown shows it). A 3.29 server drops `endDate` and makes a day entry, so `useMealPlan.addEntry` deletes a reply that has no
-`endDate` after a whole-week add and raises `WeekEntriesUnsupportedError` (the screen says the server needs 3.30). Day-strip dots
+3.30 (unknown shows it); the empty section and its + are drawn only after the version lookup settled (no flash on an older server), entries
+that exist are always drawn. A 3.29 server drops `endDate` and makes a day entry, so `useMealPlan.addEntry` deletes a reply that has no
+`endDate` after a whole-week add and raises `WeekEntriesUnsupportedError` (the screen says the server needs 3.30, and says so
+separately when the stray Monday entry could not be deleted and is still on the plan). Day-strip dots
 ignore week entries. `getTodayMeals` is unused and not week-aware.
 
 ### Known issues / TODO

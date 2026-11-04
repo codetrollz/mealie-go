@@ -186,7 +186,8 @@
     "wholeWeekTitle": "Toute la semaine · {{range}}",
     "wholeWeekTap": "Touchez pour planifier toute la semaine",
     "weekRange": "{{from}} – {{to}}",
-    "weekNotSupported": "Ce serveur Mealie ne prend pas en charge les entrées pour toute la semaine (version 3.30 ou plus récente requise)."
+    "weekNotSupported": "Ce serveur Mealie ne prend pas en charge les entrées pour toute la semaine (version 3.30 ou plus récente requise).",
+    "weekNotSupportedStray": "Ce serveur Mealie ne prend pas en charge les entrées pour toute la semaine (version 3.30 ou plus récente requise). L'entrée créée le lundi n'a pas pu être supprimée ; supprimez-la."
   },
   "shopping": {
     "title": "Courses",

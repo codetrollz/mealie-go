@@ -169,7 +169,8 @@
     "wholeWeekTitle": "Ganze Woche · {{range}}",
     "wholeWeekTap": "Tippen, um die ganze Woche zu planen",
     "weekRange": "{{from}} – {{to}}",
-    "weekNotSupported": "Dieser Mealie-Server unterstützt keine Einträge für die ganze Woche (benötigt Version 3.30 oder neuer)."
+    "weekNotSupported": "Dieser Mealie-Server unterstützt keine Einträge für die ganze Woche (benötigt Version 3.30 oder neuer).",
+    "weekNotSupportedStray": "Dieser Mealie-Server unterstützt keine Einträge für die ganze Woche (benötigt Version 3.30 oder neuer). Der dabei am Montag angelegte Eintrag konnte nicht entfernt werden; bitte lösche ihn."
   },
   "suggestions": {
     "title": "Was kann ich kochen?",

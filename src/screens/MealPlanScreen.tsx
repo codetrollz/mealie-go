@@ -71,15 +71,18 @@ export default function MealPlanScreen() {
 
   // Older servers (before Mealie 3.30) have no whole-week entries, so the add button is hidden for them. A failed
   // lookup or an unrecognised version leaves it visible.
+  // Until the lookup settles the empty section is not drawn, so it does not flash up on an older server.
   const [serverVersion, setServerVersion] = useState<string | undefined>();
+  const [versionChecked, setVersionChecked] = useState(false);
   useEffect(() => {
     let alive = true;
     Promise.resolve().then(() => api.getAppAbout())
       .then(info => { if (alive) setServerVersion(info?.version); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => { if (alive) setVersionChecked(true); });
     return () => { alive = false; };
   }, []);
-  const canAddWeek = supportsWeekEntries(serverVersion);
+  const canAddWeek = versionChecked && supportsWeekEntries(serverVersion);
 
   // A recipe opened from here can be edited or deleted before Back returns to
   // this screen, so re-fetch quietly on regaining focus. The first focus is
@@ -150,7 +153,7 @@ export default function MealPlanScreen() {
     : { date: selectedDate };
 
   const addErrorMessage = (e: unknown, fallbackKey: string) =>
-    e instanceof WeekEntriesUnsupportedError ? t('mealPlan.weekNotSupported')
+    e instanceof WeekEntriesUnsupportedError ? t(e.strayKept ? 'mealPlan.weekNotSupportedStray' : 'mealPlan.weekNotSupported')
       : e instanceof Error ? e.message : t(fallbackKey);
 
   const handleAddRecipe = async (recipe: RecipeSummary) => {

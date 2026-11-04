@@ -57,3 +57,10 @@ test('a week with only an overlapping week entry adds nothing', async () => {
   expect(count).toBe(0);
   expect(api.addRecipesToShoppingList).not.toHaveBeenCalled();
 });
+
+test('each week is judged against its own dates, not the first week\'s', async () => {
+  // W2's response holds one week entry that starts in W2 (add) and one that started in W1 (skip).
+  const count = await addWeeks([[], [entry(1, '2026-11-09', 'a', '2026-11-15'), entry(2, '2026-11-04', 'b', '2026-11-10')]], [W1, W2]);
+  expect(count).toBe(1);
+  expect(api.addRecipesToShoppingList).toHaveBeenCalledWith('l', ['a']);
+});

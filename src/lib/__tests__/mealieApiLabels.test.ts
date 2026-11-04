@@ -68,8 +68,11 @@ test('a week-long entry is created with its endDate, a day entry without one', a
 });
 
 test('the server version comes from the authenticated /api/app/about and a failure gives null', async () => {
-  (global as any).fetch = reply({ version: 'v3.30.0' });
+  const fetchMock = reply({ version: 'v3.30.0' });
+  (global as any).fetch = fetchMock;
   expect(await api.getAppAbout()).toEqual({ version: 'v3.30.0' });
+  expect(fetchMock.mock.calls[0][0]).toBe('https://mealie.test/api/app/about');
+  expect(fetchMock.mock.calls[0][1].headers.Authorization).toMatch(/^Bearer .+/);
   (global as any).fetch = jest.fn().mockRejectedValue(new Error('offline'));
   expect(await api.getAppAbout()).toBeNull();
 });

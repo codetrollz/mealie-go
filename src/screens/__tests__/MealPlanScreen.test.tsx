@@ -57,6 +57,7 @@ describe('whole-week entries (Mealie 3.30)', () => {
     expect(await screen.findByText('Soup of the week')).toBeTruthy();
     expect(screen.getByText('Whole week')).toBeTruthy();
     expect(screen.getAllByText('Soup of the week')).toHaveLength(1);
+    expect(screen.getAllByText('Lunch')).toHaveLength(2);                      // the section header and this entry's meal-type tag
     await fireEvent.press(screen.getByText('Fri'));
     expect(screen.getByText('Soup of the week')).toBeTruthy();                 // still there on another day
     expect(screen.queryByText('Wednesday dinner')).toBeNull();                 // day entries still follow the selected day
@@ -84,6 +85,7 @@ describe('whole-week entries (Mealie 3.30)', () => {
     (api.createMealPlan as jest.Mock).mockResolvedValue(weekEntry(10, '2026-10-26', '2026-11-01', 'Meal prep', 'lunch'));
     await renderScreen(<MealPlanScreen />);
     await screen.findByText('Wednesday dinner');
+    await screen.findByText('Whole week');
     await fireEvent.press(screen.getAllByText('+')[0]);                              // the whole-week +, above the meal types
     expect(await screen.findByText('Whole week · Oct 26 – Nov 1')).toBeTruthy();
     await fireEvent.press(screen.getAllByText('Lunch').at(-1)!);                     // the chip in the add sheet
@@ -118,12 +120,14 @@ describe('whole-week entries (Mealie 3.30)', () => {
     (api.deleteMealPlan as jest.Mock).mockResolvedValue(undefined);
     await renderScreen(<MealPlanScreen />);
     await screen.findByText('Wednesday dinner');
+    await screen.findByText('Whole week');
     await fireEvent.press(screen.getAllByText('+')[0]);
     await fireEvent.press(screen.getByText('Note'));
     await fireEvent.changeText(screen.getByPlaceholderText(/Leftovers/), 'Meal prep');
     await fireEvent.press(screen.getByText('Add Note'));
     await waitFor(() => expect(alert).toHaveBeenCalledWith('Error', expect.stringContaining('3.30')));
     expect(api.deleteMealPlan).toHaveBeenCalledWith(12);
+    await fireEvent.press(screen.getByText('Mon'));                            // the stray entry would be a Monday entry
     expect(screen.queryByText('Meal prep')).toBeNull();
     alert.mockRestore();
   });
@@ -135,11 +139,12 @@ describe('whole-week entries (Mealie 3.30)', () => {
     (api.deleteMealPlan as jest.Mock).mockRejectedValue(new Error('offline'));
     await renderScreen(<MealPlanScreen />);
     await screen.findByText('Wednesday dinner');
+    await screen.findByText('Whole week');
     await fireEvent.press(screen.getAllByText('+')[0]);
     await fireEvent.press(screen.getByText('Note'));
     await fireEvent.changeText(screen.getByPlaceholderText(/Leftovers/), 'Meal prep');
     await fireEvent.press(screen.getByText('Add Note'));
-    await waitFor(() => expect(alert).toHaveBeenCalledWith('Error', expect.stringContaining('3.30')));
+    await waitFor(() => expect(alert).toHaveBeenCalledWith('Error', expect.stringContaining('could not be removed')));
     await fireEvent.press(screen.getByText('Mon'));                            // the stray entry is a plain Monday entry
     expect(await screen.findByText('Meal prep')).toBeTruthy();
     alert.mockRestore();
@@ -150,6 +155,7 @@ describe('whole-week entries (Mealie 3.30)', () => {
     (api.createMealPlan as jest.Mock).mockResolvedValue(weekEntry(13, '2026-10-26', '2026-11-01', 'Meal prep'));
     await renderScreen(<MealPlanScreen />);
     await screen.findByText('Wednesday dinner');
+    await screen.findByText('Whole week');
     await fireEvent.press(screen.getAllByText('+')[0]);
     await fireEvent.press(screen.getByText('Note'));
     await fireEvent.changeText(screen.getByPlaceholderText(/Leftovers/), 'Meal prep');
@@ -164,6 +170,7 @@ describe('whole-week entries (Mealie 3.30)', () => {
     (api.createMealPlan as jest.Mock).mockRejectedValue(new Error('end_date must be empty or 6 days after date'));
     await renderScreen(<MealPlanScreen />);
     await screen.findByText('Wednesday dinner');
+    await screen.findByText('Whole week');
     await fireEvent.press(screen.getAllByText('+')[0]);
     await fireEvent.press(screen.getByText('Note'));
     await fireEvent.changeText(screen.getByPlaceholderText(/Leftovers/), 'x');
@@ -207,12 +214,28 @@ describe('whole-week entries (Mealie 3.30)', () => {
     expect(screen.getByText('Whole week')).toBeTruthy();
   });
 
+  test('until the version lookup answers, an empty whole-week section is not drawn (no flash on an older server)', async () => {
+    (api.getAppAbout as jest.Mock).mockReturnValue(new Promise(() => {}));        // never settles
+    plan();
+    await renderScreen(<MealPlanScreen />);
+    await screen.findByText('Wednesday dinner');
+    expect(screen.queryByText('Whole week')).toBeNull();
+    expect(screen.getAllByText('+')).toHaveLength(4);
+  });
+
+  test('an entry that is already there is drawn without waiting for the version lookup', async () => {
+    (api.getAppAbout as jest.Mock).mockReturnValue(new Promise(() => {}));
+    plan(weekEntry(9, '2026-10-26', '2026-11-01', 'Soup of the week'));
+    await renderScreen(<MealPlanScreen />);
+    expect(await screen.findByText('Soup of the week')).toBeTruthy();
+  });
+
   test('an unknown version or a failed version lookup keeps the whole-week section', async () => {
     (api.getAppAbout as jest.Mock).mockResolvedValue(null);
     plan();
     await renderScreen(<MealPlanScreen />);
     await screen.findByText('Wednesday dinner');
-    expect(screen.getByText('Whole week')).toBeTruthy();
+    expect(await screen.findByText('Whole week')).toBeTruthy();
     expect(screen.getAllByText('+')).toHaveLength(5);
   });
 });

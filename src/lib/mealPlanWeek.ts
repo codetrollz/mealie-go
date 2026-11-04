@@ -8,9 +8,12 @@ import type { MealPlanEntry } from '../types';
 // Mealie before 3.30 accepts an `endDate` on a new plan entry and silently drops it (probed on 3.29: 201, no endDate
 // in the reply), leaving a plain entry on the start day. Raised when a whole-week add comes back without its endDate.
 export class WeekEntriesUnsupportedError extends Error {
-  constructor() {
+  // True when taking the stray day entry back failed, so it is still on the plan.
+  readonly strayKept: boolean;
+  constructor(strayKept = false) {
     super('This Mealie server does not support whole-week entries');
     this.name = 'WeekEntriesUnsupportedError';
+    this.strayKept = strayKept;
   }
 }
 

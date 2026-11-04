@@ -55,12 +55,14 @@ export function useMealPlan(weekDate: Date) {
     if (data.endDate && !entry.endDate) {
       // An older server dropped the endDate and made a plain day entry: take it back. If that fails, show the
       // stray entry so it can be removed by hand.
+      let strayKept = false;
       try {
         await api.deleteMealPlan(entry.id);
       } catch {
+        strayKept = true;
         setEntries(prev => [...prev, entry]);
       }
-      throw new WeekEntriesUnsupportedError();
+      throw new WeekEntriesUnsupportedError(strayKept);
     }
     setEntries(prev => [...prev, entry]);
   }, []);
