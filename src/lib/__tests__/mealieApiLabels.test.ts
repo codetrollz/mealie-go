@@ -48,3 +48,28 @@ test('an older server that answers with the item itself still works', async () =
   (global as any).fetch = reply({ id: 'a', checked: true });
   expect((await api.updateShoppingItem('a', { checked: true })).updatedItems[0].checked).toBe(true);
 });
+
+test('meal plans are read with include_week_entries, which Mealie 3.30 needs to return week-long entries', async () => {
+  const fetchMock = reply({ items: [] });
+  (global as any).fetch = fetchMock;
+  await api.getMealPlans('2026-11-09', '2026-11-15');
+  const url = new URL(fetchMock.mock.calls[0][0] as string);
+  expect(url.pathname).toBe('/api/households/mealplans');
+  expect(url.searchParams.get('include_week_entries')).toBe('true');
+  expect(url.searchParams.get('start_date')).toBe('2026-11-09');
+  expect(url.searchParams.get('end_date')).toBe('2026-11-15');
+});
+
+test('a week-long entry is created with its endDate, a day entry without one', async () => {
+  const fetchMock = reply({ id: 1 });
+  (global as any).fetch = fetchMock;
+  await api.createMealPlan({ date: '2026-11-09', endDate: '2026-11-15', entryType: 'dinner', recipeId: 'r1' });
+  expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ date: '2026-11-09', endDate: '2026-11-15', entryType: 'dinner', recipeId: 'r1' });
+});
+
+test('the server version comes from the authenticated /api/app/about and a failure gives null', async () => {
+  (global as any).fetch = reply({ version: 'v3.30.0' });
+  expect(await api.getAppAbout()).toEqual({ version: 'v3.30.0' });
+  (global as any).fetch = jest.fn().mockRejectedValue(new Error('offline'));
+  expect(await api.getAppAbout()).toBeNull();
+});

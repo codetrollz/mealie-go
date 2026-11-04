@@ -181,7 +181,12 @@
     "typeToSearch": "अपनी रेसिपी खोजने के लिए टाइप करें",
     "noteTitleLabel": "नोट शीर्षक",
     "notePlaceholder": "जैसे बचा हुआ खाना, बाहर खाना, उपवास…",
-    "addNoteButton": "नोट जोड़ें"
+    "addNoteButton": "नोट जोड़ें",
+    "wholeWeek": "पूरा सप्ताह",
+    "wholeWeekTitle": "पूरा सप्ताह · {{range}}",
+    "wholeWeekTap": "पूरे सप्ताह की योजना बनाने के लिए टैप करें",
+    "weekRange": "{{from}} – {{to}}",
+    "weekNotSupported": "यह Mealie सर्वर पूरे सप्ताह की प्रविष्टियों को सपोर्ट नहीं करता (संस्करण 3.30 या नया चाहिए)।"
   },
   "shopping": {
     "title": "शॉपिंग",

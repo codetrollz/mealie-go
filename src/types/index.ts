@@ -217,6 +217,9 @@ export interface MealPlanEntry {
   householdId: string;
   userId: string;
   date: string;
+  // Mealie 3.30 week-long entries: set (date + 6 days) for an entry planned for a whole week, null/absent for a day entry.
+  endDate?: string | null;
+  recipeScale?: number;
   entryType: MealPlanEntryType;
   title?: string;
   text?: string;
@@ -226,6 +229,8 @@ export interface MealPlanEntry {
 
 export interface CreateMealPlanEntry {
   date: string;
+  // Mealie only accepts empty or exactly date + 6 days.
+  endDate?: string;
   entryType: MealPlanEntryType;
   title?: string;
   recipeId?: string;

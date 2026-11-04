@@ -181,7 +181,12 @@
     "typeToSearch": "আপনার রেসিপি খুঁজতে টাইপ করুন",
     "noteTitleLabel": "নোটের শিরোনাম",
     "notePlaceholder": "যেমন অবশিষ্ট খাবার, বাইরে খাওয়া, উপবাস…",
-    "addNoteButton": "নোট যোগ করুন"
+    "addNoteButton": "নোট যোগ করুন",
+    "wholeWeek": "পুরো সপ্তাহ",
+    "wholeWeekTitle": "পুরো সপ্তাহ · {{range}}",
+    "wholeWeekTap": "পুরো সপ্তাহের পরিকল্পনা করতে ট্যাপ করুন",
+    "weekRange": "{{from}} – {{to}}",
+    "weekNotSupported": "এই Mealie সার্ভার পুরো সপ্তাহের এন্ট্রি সমর্থন করে না (সংস্করণ ৩.৩০ বা নতুন প্রয়োজন)।"
   },
   "shopping": {
     "title": "শপিং",

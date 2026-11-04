@@ -9,6 +9,8 @@ import { useTranslation } from 'react-i18next';
 import { useMealPlan } from '../hooks/useMealPlan';
 import { api } from '../lib/mealieApi';
 import { localIsoDate } from '../lib/localDate';
+import { splitWeekEntries, WeekEntriesUnsupportedError, weekEntryRange } from '../lib/mealPlanWeek';
+import { supportsWeekEntries } from '../lib/serverFeatures';
 import { navigateToGuide } from '../navigation/navigateToGuide';
 import type { MealPlanStackParams } from '../navigation/RootNavigator';
 import EmptyState from '../components/EmptyState';
@@ -39,6 +41,8 @@ function mondayOfWeek(date: Date): Date {
 const isoDate = localIsoDate;
 
 type AddMode = 'recipe' | 'note';
+// A day entry belongs to the selected day; a whole-week entry (Mealie 3.30) to the Monday-Sunday week on screen.
+type AddTarget = 'day' | 'week';
 
 export default function MealPlanScreen() {
   const styles = useStyles();
@@ -62,6 +66,20 @@ export default function MealPlanScreen() {
   const today = new Date();
   const weekStart = addDays(mondayOfWeek(today), weekOffset * 7);
   const { entries, loading, error, refresh, addEntry, removeEntry } = useMealPlan(weekStart);
+  const weekStartIso = isoDate(weekStart);
+  const weekEndIso = isoDate(addDays(weekStart, 6));
+
+  // Older servers (before Mealie 3.30) have no whole-week entries, so the add button is hidden for them. A failed
+  // lookup or an unrecognised version leaves it visible.
+  const [serverVersion, setServerVersion] = useState<string | undefined>();
+  useEffect(() => {
+    let alive = true;
+    Promise.resolve().then(() => api.getAppAbout())
+      .then(info => { if (alive) setServerVersion(info?.version); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  const canAddWeek = supportsWeekEntries(serverVersion);
 
   // A recipe opened from here can be edited or deleted before Back returns to
   // this screen, so re-fetch quietly on regaining focus. The first focus is
@@ -77,7 +95,8 @@ export default function MealPlanScreen() {
   }, []));
 
   const selectedDate = isoDate(addDays(weekStart, selectedDay));
-  const dayEntries = entries.filter(e => e.date === selectedDate);
+  const { week: weekEntries, day: plainEntries } = splitWeekEntries(entries);
+  const dayEntries = plainEntries.filter(e => e.date === selectedDate);
   const entriesByType = MEAL_TYPES.reduce<Record<string, MealPlanEntry[]>>((acc, type) => {
     acc[type] = dayEntries.filter(e => e.entryType === type);
     return acc;
@@ -85,6 +104,7 @@ export default function MealPlanScreen() {
 
   const [showAdd, setShowAdd] = useState(false);
   const [addMealType, setAddMealType] = useState<MealPlanEntryType>('dinner');
+  const [addTarget, setAddTarget] = useState<AddTarget>('day');
   const [addMode, setAddMode] = useState<AddMode>('recipe');
   const [recipeSearch, setRecipeSearch] = useState('');
   const [searchResults, setSearchResults] = useState<RecipeSummary[]>([]);
@@ -110,8 +130,9 @@ export default function MealPlanScreen() {
     }, 400);
   }, []);
 
-  const openAdd = (mealType: MealPlanEntryType) => {
+  const openAdd = (mealType: MealPlanEntryType, target: AddTarget = 'day') => {
     setAddMealType(mealType);
+    setAddTarget(target);
     setAddMode('recipe');
     setRecipeSearch('');
     setSearchResults([]);
@@ -123,13 +144,22 @@ export default function MealPlanScreen() {
     navigation.navigate('RecipeDetail', { slug: recipe.slug, name: recipe.name });
   };
 
+  // Mealie only accepts a missing endDate or exactly date + 6 days, so a whole-week entry is Monday to Sunday.
+  const entryDates = () => addTarget === 'week'
+    ? { date: weekStartIso, endDate: weekEndIso }
+    : { date: selectedDate };
+
+  const addErrorMessage = (e: unknown, fallbackKey: string) =>
+    e instanceof WeekEntriesUnsupportedError ? t('mealPlan.weekNotSupported')
+      : e instanceof Error ? e.message : t(fallbackKey);
+
   const handleAddRecipe = async (recipe: RecipeSummary) => {
     setAdding(true);
     try {
-      await addEntry({ date: selectedDate, entryType: addMealType, recipeId: recipe.id });
+      await addEntry({ ...entryDates(), entryType: addMealType, recipeId: recipe.id });
       setShowAdd(false);
     } catch (e) {
-      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('mealPlan.genericAddError'));
+      Alert.alert(t('common.error'), addErrorMessage(e, 'mealPlan.genericAddError'));
     } finally {
       setAdding(false);
     }
@@ -139,10 +169,10 @@ export default function MealPlanScreen() {
     if (!noteText.trim()) return;
     setAdding(true);
     try {
-      await addEntry({ date: selectedDate, entryType: addMealType, title: noteText.trim() });
+      await addEntry({ ...entryDates(), entryType: addMealType, title: noteText.trim() });
       setShowAdd(false);
     } catch (e) {
-      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('mealPlan.genericAddNoteError'));
+      Alert.alert(t('common.error'), addErrorMessage(e, 'mealPlan.genericAddNoteError'));
     } finally {
       setAdding(false);
     }
@@ -153,10 +183,10 @@ export default function MealPlanScreen() {
     try {
       const recipe = await api.getRandomRecipe();
       if (!recipe) { Alert.alert(t('mealPlan.noRecipesFoundAlert')); return; }
-      await addEntry({ date: selectedDate, entryType: addMealType, recipeId: recipe.id });
+      await addEntry({ ...entryDates(), entryType: addMealType, recipeId: recipe.id });
       setShowAdd(false);
     } catch (e) {
-      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('mealPlan.genericRandomError'));
+      Alert.alert(t('common.error'), addErrorMessage(e, 'mealPlan.genericRandomError'));
     } finally {
       setAdding(false);
     }
@@ -172,6 +202,30 @@ export default function MealPlanScreen() {
       ]
     );
   };
+
+  const renderEntry = (entry: MealPlanEntry, tags?: React.ReactNode) => (
+    <View key={entry.id} style={[styles.mealEntry, entry.recipeId ? null : styles.mealEntryNote]}>
+      {entry.recipe?.slug ? (
+        <TouchableOpacity style={styles.mealNameTouch} onPress={() => openRecipe(entry.recipe!)}>
+          <Text style={styles.mealName}>{entry.recipe.name}</Text>
+        </TouchableOpacity>
+      ) : (
+        <Text style={styles.mealName}>
+          {entry.recipe?.name ?? entry.title ?? t('mealPlan.untitled')}
+        </Text>
+      )}
+      {!entry.recipeId && (
+        <Text style={styles.noteTag}>{t('mealPlan.noteTag')}</Text>
+      )}
+      {tags}
+      <TouchableOpacity onPress={() => handleDelete(entry)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <Text style={styles.removeText}>✕</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const fmtShort = (iso: string) =>
+    new Date(iso + 'T12:00:00').toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
 
   return (
     <View style={styles.container}>
@@ -201,7 +255,7 @@ export default function MealPlanScreen() {
         {dayLabels.map((day, i) => {
           const date = addDays(weekStart, i);
           const isToday = isoDate(date) === isoDate(today);
-          const hasEntries = entries.some(e => e.date === isoDate(date));
+          const hasEntries = plainEntries.some(e => e.date === isoDate(date));
           return (
             <TouchableOpacity
               key={day}
@@ -229,6 +283,33 @@ export default function MealPlanScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.planList}>
+          {(canAddWeek || weekEntries.length > 0) && (
+            <View style={styles.mealSection}>
+              <View style={styles.mealSectionHeader}>
+                <Text style={styles.mealType}>{t('mealPlan.wholeWeek')}</Text>
+                {canAddWeek && (
+                  <TouchableOpacity style={styles.addMealBtn} onPress={() => openAdd('dinner', 'week')}>
+                    <Text style={styles.addMealBtnText}>+</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              {weekEntries.length === 0 ? (
+                <TouchableOpacity style={styles.emptyMealSlot} onPress={() => openAdd('dinner', 'week')}>
+                  <Text style={styles.emptyMealText}>{t('mealPlan.wholeWeekTap')}</Text>
+                </TouchableOpacity>
+              ) : weekEntries.map(entry => {
+                const range = weekEntryRange(entry, weekStartIso, weekEndIso);
+                return renderEntry(entry, (
+                  <>
+                    <Text style={styles.noteTag}>{mealTypeLabels[entry.entryType]}</Text>
+                    {range && (
+                      <Text style={styles.noteTag}>{t('mealPlan.weekRange', { from: fmtShort(range.from), to: fmtShort(range.to) })}</Text>
+                    )}
+                  </>
+                ));
+              })}
+            </View>
+          )}
           {MEAL_TYPES.map(type => (
             <View key={type} style={styles.mealSection}>
               <View style={styles.mealSectionHeader}>
@@ -241,25 +322,7 @@ export default function MealPlanScreen() {
                 <TouchableOpacity style={styles.emptyMealSlot} onPress={() => openAdd(type)}>
                   <Text style={styles.emptyMealText}>{t('mealPlan.tapToAdd')}</Text>
                 </TouchableOpacity>
-              ) : entriesByType[type].map(entry => (
-                <View key={entry.id} style={[styles.mealEntry, entry.recipeId ? null : styles.mealEntryNote]}>
-                  {entry.recipe?.slug ? (
-                    <TouchableOpacity style={styles.mealNameTouch} onPress={() => openRecipe(entry.recipe!)}>
-                      <Text style={styles.mealName}>{entry.recipe.name}</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <Text style={styles.mealName}>
-                      {entry.recipe?.name ?? entry.title ?? t('mealPlan.untitled')}
-                    </Text>
-                  )}
-                  {!entry.recipeId && (
-                    <Text style={styles.noteTag}>{t('mealPlan.noteTag')}</Text>
-                  )}
-                  <TouchableOpacity onPress={() => handleDelete(entry)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Text style={styles.removeText}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
+              ) : entriesByType[type].map(entry => renderEntry(entry))}
             </View>
           ))}
           <View style={{ height: spacing.xxl }} />
@@ -273,10 +336,26 @@ export default function MealPlanScreen() {
               <Text style={addStyles.cancel}>{t('common.cancel')}</Text>
             </TouchableOpacity>
             <Text style={addStyles.title}>
-              {mealTypeLabels[addMealType]} — {new Date(selectedDate + 'T12:00:00').toLocaleDateString(i18n.language, { weekday: 'short', month: 'short', day: 'numeric' })}
+              {addTarget === 'week'
+                ? t('mealPlan.wholeWeekTitle', { range: `${fmtShort(weekStartIso)} – ${fmtShort(weekEndIso)}` })
+                : `${mealTypeLabels[addMealType]} — ${new Date(selectedDate + 'T12:00:00').toLocaleDateString(i18n.language, { weekday: 'short', month: 'short', day: 'numeric' })}`}
             </Text>
             <View style={{ width: 60 }} />
           </View>
+
+          {addTarget === 'week' && (
+            <View style={[addStyles.modeRow, { marginBottom: 0 }]}>
+              {MEAL_TYPES.map(type => (
+                <TouchableOpacity
+                  key={type}
+                  style={[addStyles.modeBtn, addMealType === type && addStyles.modeBtnActive]}
+                  onPress={() => setAddMealType(type)}
+                >
+                  <Text style={[addStyles.modeBtnText, addMealType === type && addStyles.modeBtnTextActive]} numberOfLines={1}>{mealTypeLabels[type]}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
           <View style={addStyles.modeRow}>
             <TouchableOpacity

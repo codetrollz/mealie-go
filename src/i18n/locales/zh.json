@@ -180,7 +180,12 @@
     "typeToSearch": "输入以搜索您的食谱",
     "noteTitleLabel": "备注标题",
     "notePlaceholder": "例如：剩菜、外出就餐、禁食…",
-    "addNoteButton": "添加备注"
+    "addNoteButton": "添加备注",
+    "wholeWeek": "整周",
+    "wholeWeekTitle": "整周 · {{range}}",
+    "wholeWeekTap": "点按为整周安排餐食",
+    "weekRange": "{{from}} – {{to}}",
+    "weekNotSupported": "此 Mealie 服务器不支持整周条目(需要 3.30 或更高版本)。"
   },
   "shopping": {
     "title": "购物",

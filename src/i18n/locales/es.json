@@ -181,7 +181,12 @@
     "typeToSearch": "Escribe para buscar tus recetas",
     "noteTitleLabel": "Título de la nota",
     "notePlaceholder": "p. ej. Sobras, Comer fuera, Ayuno…",
-    "addNoteButton": "Añadir nota"
+    "addNoteButton": "Añadir nota",
+    "wholeWeek": "Toda la semana",
+    "wholeWeekTitle": "Toda la semana · {{range}}",
+    "wholeWeekTap": "Toca para planificar toda la semana",
+    "weekRange": "{{from}} – {{to}}",
+    "weekNotSupported": "Este servidor de Mealie no admite entradas de toda la semana (necesita la versión 3.30 o posterior)."
   },
   "shopping": {
     "title": "Compras",

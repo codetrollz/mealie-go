@@ -77,4 +77,8 @@ export const mealPlan = (dates: { mon: string; tue: string; wed: string }) => {
     e(3, dates.wed, 'dinner', recipes[0]), e(4, dates.wed, 'side', recipes[3]), e(5, dates.wed, 'side', recipes[4])];
 };
 
+// A Mealie 3.30 week-long entry: endDate is six days after date.
+export const weekEntry = (id: number, date: string, endDate: string, entryType: string, r: typeof recipes[number]) =>
+  ({ id, groupId: 'g', householdId: 'h', userId: 'u', date, endDate, entryType, title: '', text: '', recipeId: r.id, recipe: r });
+
 export const paged = page;

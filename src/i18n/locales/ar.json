@@ -180,7 +180,12 @@
     "typeToSearch": "اكتب للبحث في وصفاتك",
     "noteTitleLabel": "عنوان الملاحظة",
     "notePlaceholder": "مثال: بقايا الطعام، تناول الطعام بالخارج، الصيام…",
-    "addNoteButton": "إضافة ملاحظة"
+    "addNoteButton": "إضافة ملاحظة",
+    "wholeWeek": "الأسبوع كله",
+    "wholeWeekTitle": "الأسبوع كله · {{range}}",
+    "wholeWeekTap": "اضغط لتخطيط الأسبوع كله",
+    "weekRange": "{{from}} – {{to}}",
+    "weekNotSupported": "خادم Mealie هذا لا يدعم إدخالات الأسبوع كله (يتطلب الإصدار 3.30 أو أحدث)."
   },
   "shopping": {
     "title": "التسوق",

@@ -28,6 +28,14 @@ beforeEach(() => {
 });
 
 test('meal plan', () => shot('meal-plan', <MealPlanScreen />, host => clickText(host, 'Thu')));
+test('meal plan with a whole-week entry', () => {
+  (api.getMealPlans as jest.Mock).mockResolvedValue(f.paged([
+    ...f.mealPlan({ mon: '2026-10-27', tue: '2026-10-28', wed: '2026-10-29' }),
+    f.weekEntry(20, '2026-10-26', '2026-11-01', 'lunch', f.recipes[5] ?? f.recipes[0]),
+    f.weekEntry(21, '2026-10-28', '2026-11-03', 'dinner', f.recipes[2]),
+  ]));
+  return shot('meal-plan-week', <MealPlanScreen />, host => clickText(host, 'Thu'));
+});
 test('recipes', () => shot('recipes', <RecipesScreen navigation={nav} />));
 test('recipe detail', () => shot('recipe-detail', <RecipeDetailScreen navigation={nav} route={route({ slug: 'salisbury-steak-with-mushroom-gravy', name: 'Salisbury Steak with Mushroom Gravy' })} />));
 test('recipe edit', () => shot('recipe-edit', <RecipeEditScreen navigation={nav} route={route({ slug: 'salisbury-steak-with-mushroom-gravy' })} />));

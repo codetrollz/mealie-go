@@ -164,7 +164,12 @@
     "typeToSearch": "Type to search your recipes",
     "noteTitleLabel": "Note title",
     "notePlaceholder": "e.g. Leftovers, Dining out, Fasting…",
-    "addNoteButton": "Add Note"
+    "addNoteButton": "Add Note",
+    "wholeWeek": "Whole week",
+    "wholeWeekTitle": "Whole week · {{range}}",
+    "wholeWeekTap": "Tap to plan the whole week",
+    "weekRange": "{{from}} – {{to}}",
+    "weekNotSupported": "This Mealie server doesn't support whole-week entries (it needs version 3.30 or newer)."
   },
   "shopping": {
     "title": "Shopping",

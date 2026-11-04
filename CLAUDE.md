@@ -391,9 +391,9 @@ reuses the export builder (`runPdfExport`), copies the file to `<cache>/<slug>.p
 ### Meal Plans
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/api/households/mealplans` | `?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD&perPage=100` |
+| GET | `/api/households/mealplans` | `?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD&perPage=100&include_week_entries=true`. Mealie 3.30 week-long entries (`endDate` set) are hidden unless `include_week_entries=true`; with it the server returns every one that **overlaps** the range, not just ones starting inside it (a Wed-Tue entry comes back for both weeks it touches). Older servers ignore the parameter (checked on 3.29). |
 | GET | `/api/households/mealplans/today` | Returns array (not paginated) |
-| POST | `/api/households/mealplans` | Body: `{ date, entryType, title?, recipeId? }` |
+| POST | `/api/households/mealplans` | Body: `{ date, entryType, title?, recipeId?, endDate? }`. `endDate` must be empty or **exactly `date` + 6 days** (else 422); it need not start on a Monday. Mealie before 3.30 accepts `endDate` and silently drops it (201, plain day entry, no `endDate` in the reply). |
 | DELETE | `/api/households/mealplans/{id}` | id is a number |
 
 ### Shopping Lists
@@ -538,7 +538,7 @@ empty filter string, same as the "no filter" default.
 | POST | `/api/auth/token` | Form data (NOT JSON): `username, password, remember_me` |
 | GET | `/api/users/self` | Returns UserProfile (includes `groupSlug`, used for share links) |
 | GET | `/api/auth/refresh` | Re-signs a **still-valid** token for a fresh one. Cannot recover an already-expired token — must be called proactively, not reactively on 401. `AuthContext` calls this every 6h and on app-foreground. |
-| GET | `/api/app/about` | **Unauthenticated.** Returns `AppInfo`: `version`, `enableOidc`, `oidcProviderName`, `allowPasswordLogin`. `ConnectScreen` calls this on server-URL blur (`getAppInfo()` in `mealieApi.ts`) to decide whether to show password fields, an OIDC button, or both — fails soft to `null` (password fields shown) on any error so it can never regress the existing login path. |
+| GET | `/api/app/about` | (Also works authenticated: `api.getAppAbout()` reads the server `version` to hide whole-week meal plan entries below 3.30; null on failure.) **Unauthenticated.** Returns `AppInfo`: `version`, `enableOidc`, `oidcProviderName`, `allowPasswordLogin`. `ConnectScreen` calls this on server-URL blur (`getAppInfo()` in `mealieApi.ts`) to decide whether to show password fields, an OIDC button, or both — fails soft to `null` (password fields shown) on any error so it can never regress the existing login path. |
 | GET | `/api/auth/oauth` | Kicks off Mealie's server-side OIDC redirect. See "SSO / OIDC login" below — opened in an embedded WebView, not called directly. |
 
 ### Comments
@@ -2362,6 +2362,16 @@ All source files scaffolded and ready for `npm install + prebuild`:
 - i18next, react-i18next, expo-localization — added 2026-07-18 for the Localization (i18n) feature
   above. Same as react-native-webview: linked and built cleanly, `npx expo install --check` clean,
   but not exercised on a physical device this session.
+
+**Whole-week meal plan entries (Mealie 3.30 `endDate`), 2026-11-04.** The Meal Plan screen has a "Whole week" section above the
+day's meals: it lists week entries (type tag, and their own dates when they are not exactly the Monday-Sunday week shown, e.g. a
+Wed-Tue entry) and its + opens the usual add sheet with a meal-type row, saving `{ date: Monday, endDate: Sunday }`. Day adds are
+unchanged (no `endDate`). The display rule is overlap (a week entry shows in every week it touches); the shopping-list rule is
+start date (`lib/mealPlanWeek.ts` `startsInRange`, used by `addFromMealPlanWeeks`), so one recipe is never added for two
+consecutive weeks. `lib/serverFeatures.ts` `supportsWeekEntries(version)` hides the + only when the version parses and is below
+3.30 (unknown shows it). A 3.29 server drops `endDate` and makes a day entry, so `useMealPlan.addEntry` deletes a reply that has no
+`endDate` after a whole-week add and raises `WeekEntriesUnsupportedError` (the screen says the server needs 3.30). Day-strip dots
+ignore week entries. `getTodayMeals` is unused and not week-aware.
 
 ### Known issues / TODO
 - No offline caching yet (Mealient had Room DB; we could add AsyncStorage caching later)

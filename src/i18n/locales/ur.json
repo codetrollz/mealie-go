@@ -181,7 +181,12 @@
     "typeToSearch": "اپنی ریسیپیز تلاش کرنے کے لیے ٹائپ کریں",
     "noteTitleLabel": "نوٹ کا عنوان",
     "notePlaceholder": "مثلاً بچا ہوا کھانا، باہر کھانا، روزہ…",
-    "addNoteButton": "نوٹ شامل کریں"
+    "addNoteButton": "نوٹ شامل کریں",
+    "wholeWeek": "پورا ہفتہ",
+    "wholeWeekTitle": "پورا ہفتہ · {{range}}",
+    "wholeWeekTap": "پورے ہفتے کی منصوبہ بندی کے لیے ٹیپ کریں",
+    "weekRange": "{{from}} – {{to}}",
+    "weekNotSupported": "یہ Mealie سرور پورے ہفتے کی اندراجات کو سپورٹ نہیں کرتا (ورژن 3.30 یا نیا درکار ہے)۔"
   },
   "shopping": {
     "title": "شاپنگ",

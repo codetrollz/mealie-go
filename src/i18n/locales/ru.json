@@ -183,7 +183,12 @@
     "typeToSearch": "Введите текст для поиска рецептов",
     "noteTitleLabel": "Название заметки",
     "notePlaceholder": "например, остатки еды, ужин в ресторане, пост…",
-    "addNoteButton": "Добавить заметку"
+    "addNoteButton": "Добавить заметку",
+    "wholeWeek": "Вся неделя",
+    "wholeWeekTitle": "Вся неделя · {{range}}",
+    "wholeWeekTap": "Нажмите, чтобы запланировать всю неделю",
+    "weekRange": "{{from}} – {{to}}",
+    "weekNotSupported": "Этот сервер Mealie не поддерживает записи на всю неделю (нужна версия 3.30 или новее)."
   },
   "shopping": {
     "title": "Покупки",

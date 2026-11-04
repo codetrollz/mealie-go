@@ -164,7 +164,12 @@
     "typeToSearch": "Tippe, um deine Rezepte zu durchsuchen",
     "noteTitleLabel": "Notiztitel",
     "notePlaceholder": "z. B. Reste, Essen gehen, Fasten…",
-    "addNoteButton": "Notiz hinzufügen"
+    "addNoteButton": "Notiz hinzufügen",
+    "wholeWeek": "Ganze Woche",
+    "wholeWeekTitle": "Ganze Woche · {{range}}",
+    "wholeWeekTap": "Tippen, um die ganze Woche zu planen",
+    "weekRange": "{{from}} – {{to}}",
+    "weekNotSupported": "Dieser Mealie-Server unterstützt keine Einträge für die ganze Woche (benötigt Version 3.30 oder neuer)."
   },
   "suggestions": {
     "title": "Was kann ich kochen?",

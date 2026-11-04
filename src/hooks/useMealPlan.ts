@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/mealieApi';
 import { localIsoDate } from '../lib/localDate';
+import { WeekEntriesUnsupportedError } from '../lib/mealPlanWeek';
 import type { MealPlanEntry, CreateMealPlanEntry } from '../types';
 
 function weekBounds(date: Date): { start: string; end: string } {
@@ -51,6 +52,16 @@ export function useMealPlan(weekDate: Date) {
 
   const addEntry = useCallback(async (data: CreateMealPlanEntry) => {
     const entry = await api.createMealPlan(data);
+    if (data.endDate && !entry.endDate) {
+      // An older server dropped the endDate and made a plain day entry: take it back. If that fails, show the
+      // stray entry so it can be removed by hand.
+      try {
+        await api.deleteMealPlan(entry.id);
+      } catch {
+        setEntries(prev => [...prev, entry]);
+      }
+      throw new WeekEntriesUnsupportedError();
+    }
     setEntries(prev => [...prev, entry]);
   }, []);
 

@@ -610,10 +610,17 @@ export const api = {
 
   // Meal plans
   getMealPlans: (startDate?: string, endDate?: string) => {
-    const q = new URLSearchParams({ perPage: '100' });
+    // Mealie 3.30 hides week-long entries unless asked, and then returns every one that overlaps the range
+    // (older servers ignore the parameter and have no such entries).
+    const q = new URLSearchParams({ perPage: '100', include_week_entries: 'true' });
     if (startDate) q.set('start_date', startDate);
     if (endDate) q.set('end_date', endDate);
     return request<PaginatedResponse<MealPlanEntry>>(`/api/households/mealplans?${q}`);
+  },
+
+  // The server version, for hiding features an older server lacks. null when the lookup fails.
+  getAppAbout: async (): Promise<AppInfo | null> => {
+    try { return await request<AppInfo>('/api/app/about'); } catch { return null; }
   },
 
   getTodayMeals: () =>

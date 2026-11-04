@@ -3,6 +3,7 @@ import { api } from '../lib/mealieApi';
 import { planMerge } from '../lib/shoppingMerge';
 import { findBorrowedLabelSettings, isDefaultLabelOrder } from '../lib/shoppingGroups';
 import { applyItemChanges } from '../lib/shoppingItems';
+import { startsInRange } from '../lib/mealPlanWeek';
 import type { ShoppingLabel, ShoppingList, ShoppingListItem, ShoppingListLabelSetting, ShoppingListWithItems } from '../types';
 
 export function useShoppingLists() {
@@ -111,9 +112,10 @@ export function useShoppingListDetail(listId: string) {
   const addFromMealPlanWeeks = useCallback(async (weeks: { start: string; end: string }[]) => {
     if (weeks.length === 0) return 0;
     const mealPlans = await Promise.all(weeks.map(w => api.getMealPlans(w.start, w.end)));
+    // A week-long entry (Mealie 3.30) comes back for every week it overlaps; only the week holding its start date adds it.
     const recipeIds = [...new Set(
       mealPlans
-        .flatMap(mp => mp.items)
+        .flatMap((mp, i) => mp.items.filter(e => startsInRange(e, weeks[i].start, weeks[i].end)))
         .filter(e => e.recipeId)
         .map(e => e.recipeId as string)
     )];

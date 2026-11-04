@@ -20,6 +20,7 @@ const api: Record<string, unknown> = {
   getRecipeSuggestions: resolved([{ recipe: f.recipes[2], missingFoods: [{ name: 'artichokes' }], missingTools: [] }, { recipe: f.recipes[3], missingFoods: [], missingTools: [] }]),
   getFavoriteRecipeIds: resolved(new Set(['r1'])),
   getMealPlans: resolved(f.paged([])),
+  getAppAbout: resolved({ version: 'v3.30.0' }),
 };
 const mod: Record<string, unknown> = {
   __esModule: true,
